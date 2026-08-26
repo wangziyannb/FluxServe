@@ -321,7 +321,7 @@ class BlockDiffusionRunner(ModelRunner):
                     : len(seq_ids), :prefilling_length, :prefilling_length
                 ].contiguous()
 
-            output = self.model(
+            output = self(
                 prefilling_x[:, :prefilling_length].contiguous(),
                 use_cache=True,
                 attention_mask=prefill_attention_mask,
@@ -397,7 +397,7 @@ class BlockDiffusionRunner(ModelRunner):
                 forward_batch = self._make_forward_batch(
                     len(seq_ids) * self.block_length, is_prefill=False
                 )
-                output = self.model(
+                output = self(
                     decoding_block,
                     use_cache=True,
                     position_ids=decoding_pos_ids,
