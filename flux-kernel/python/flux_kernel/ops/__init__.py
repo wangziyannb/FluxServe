@@ -20,6 +20,7 @@
 
 from flux_kernel.ops.activation import silu_and_mul
 from flux_kernel.ops.moe import moe_align_block_size, moe_fused_gate
+from flux_kernel.ops.quantization import static_scaled_fp8_quant
 from flux_kernel.ops.rmsnorm import qk_rmsnorm, rmsnorm
 from flux_kernel.ops.rope import apply_rope_with_cos_sin_cache_inplace
 
@@ -29,5 +30,6 @@ __all__ = [
     "silu_and_mul",
     "moe_fused_gate",
     "moe_align_block_size",
+    "static_scaled_fp8_quant",
     "apply_rope_with_cos_sin_cache_inplace",
 ]

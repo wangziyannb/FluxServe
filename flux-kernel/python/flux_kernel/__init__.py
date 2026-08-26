@@ -29,6 +29,7 @@ from flux_kernel.ops import (
     qk_rmsnorm,
     rmsnorm,
     silu_and_mul,
+    static_scaled_fp8_quant,
 )
 
 __all__ = [
@@ -38,4 +39,5 @@ __all__ = [
     "qk_rmsnorm",
     "rmsnorm",
     "silu_and_mul",
+    "static_scaled_fp8_quant",
 ]

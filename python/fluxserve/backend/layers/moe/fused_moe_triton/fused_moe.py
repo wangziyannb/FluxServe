@@ -49,6 +49,7 @@ if TYPE_CHECKING:
 
 _is_hip = is_hip()
 _is_cuda = is_cuda()
+_use_aiter = False
 if _is_hip:
     raise RuntimeError("FluxServe fused MoE supports NVIDIA CUDA only")
 

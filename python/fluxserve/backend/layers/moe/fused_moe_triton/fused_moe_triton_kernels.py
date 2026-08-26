@@ -26,6 +26,7 @@ from typing import Any, Dict, List, Optional
 import torch
 import triton
 import triton.language as tl
+from flux_kernel import static_scaled_fp8_quant
 
 from fluxserve.backend.utils.runtime_utils import (
     get_bool_env_var,
@@ -583,7 +584,24 @@ def invoke_fused_moe_kernel(
 
     padded_size = 0
     if use_fp8_w8a8:
-        raise NotImplementedError("FP8 MoE quantization is not supported")
+        if block_shape is not None:
+            raise NotImplementedError(
+                "ModelOpt FP8 MoE does not support block-wise quantization."
+            )
+        if per_channel_quant:
+            raise NotImplementedError(
+                "ModelOpt FP8 MoE only supports static per-tensor activations."
+            )
+        if A_scale is None or B_scale is None:
+            raise ValueError("ModelOpt FP8 MoE requires activation and weight scales.")
+        if padding_size:
+            raise NotImplementedError(
+                "ModelOpt FP8 MoE does not support SGLANG_MOE_PADDING."
+            )
+        A = static_scaled_fp8_quant(
+            A,
+            A_scale,
+        )
     elif use_int8_w8a8:
         assert B_scale is not None
         if block_shape is None:

@@ -7,7 +7,7 @@
 - [ ] Flash-Attn-4
 
 ### Quantization Support
-- [ ] FP8
+- [x] ModelOpt serialized static per-tensor FP8
 - [ ] NVFP4
 
 ### Hardware Support

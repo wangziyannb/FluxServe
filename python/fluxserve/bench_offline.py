@@ -516,7 +516,7 @@ def warmup_runner(runner, args, device, logger):
 
 @torch.no_grad()
 def run_worker(args, *, init_method: str = "env://"):
-    from fluxserve.cli import _reject_unsupported_quantization, set_process_title
+    from fluxserve.cli import _resolve_quant_config, set_process_title
 
     server_args = None
     context = None
@@ -545,8 +545,9 @@ def run_worker(args, *, init_method: str = "env://"):
             "[Info] Diffusion-Gemma attention backend: "
             f"{args.attention_backend}, KV cache: {args.kv_cache_layout}."
         )
-    _reject_unsupported_quantization(model_config)
-    model_config.quant_config = None
+    model_config.quant_config = _resolve_quant_config(
+        model_config, args.quantization
+    )
     all_input_ids, prompts, questions, ids = load_inputs(
         args.dataset,
         tokenizer,
@@ -798,6 +799,12 @@ def _write_results(
 def add_bench_offline_subparser(subparsers) -> None:
     parser = subparsers.add_parser("bench_offline", help="Offline batched benchmark.")
     parser.add_argument("--model", "--model-name", "--model_name", dest="model_name", required=True)
+    parser.add_argument(
+        "--quantization",
+        choices=("auto", "modelopt_fp8"),
+        default="auto",
+        help="Quantization format. Auto-detects ModelOpt serialized static FP8.",
+    )
     parser.add_argument("--dataset", required=True)
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--batch-size", "--batch_size", dest="batch_size", type=int, default=1)

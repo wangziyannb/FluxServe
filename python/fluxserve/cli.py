@@ -84,6 +84,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     serve = sub.add_parser("serve", help='Launch the FluxServe server')
     serve.add_argument("--model", "--model-name", dest="model_name", required=True)
+    serve.add_argument(
+        "--quantization",
+        choices=("auto", "modelopt_fp8"),
+        default="auto",
+        help="Quantization format. Auto-detects ModelOpt serialized static FP8.",
+    )
     serve.add_argument("--host", default="0.0.0.0")
     serve.add_argument("--port", type=int, default=8000)
     serve.add_argument(
@@ -200,21 +206,30 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _reject_unsupported_quantization(model_config) -> None:
-    quant_config = getattr(model_config, "quantization_config", None)
-    if not isinstance(quant_config, dict):
-        return
-
-    nested = quant_config.get("quantization")
-    configs = (quant_config, nested) if isinstance(nested, dict) else (quant_config,)
-    for config in configs:
-        quant_method = str(config.get("quant_method", "")).lower()
-        quant_algo = str(config.get("quant_algo", "")).upper()
-        if "fp8" in quant_method or "FP8" in quant_algo or "FP4" in quant_algo:
+def _resolve_quant_config(model_config, quantization: str = "auto"):
+    metadata = getattr(model_config, "quantization_config", None)
+    if metadata in (None, {}):
+        if quantization == "modelopt_fp8":
             raise ValueError(
-                "FluxServe does not currently support FP8 or FP4 quantized checkpoints. "
-                "Use an unquantized BF16/FP16 checkpoint."
+                "--quantization modelopt_fp8 requires serialized ModelOpt FP8 metadata."
             )
+        return None
+    if not isinstance(metadata, dict):
+        raise ValueError("Checkpoint quantization_config must be a mapping.")
+
+    from fluxserve.backend.layers.quantization import get_quantization_config
+
+    config_class = get_quantization_config("modelopt_fp8")
+    try:
+        quant_config = config_class.from_config(metadata)
+    except ValueError as exc:
+        raise ValueError(
+            "Unsupported checkpoint quantization format. FluxServe only supports "
+            "ModelOpt serialized static per-tensor FP8."
+        ) from exc
+    if quantization not in ("auto", "modelopt_fp8"):
+        raise ValueError(f"Unsupported quantization selection: {quantization!r}")
+    return quant_config
 
 
 def normalize_diffusion_gemma_serve_args(args, model_config) -> bool:
@@ -285,8 +300,9 @@ def _serve_worker(args, *, init_method: str = "env://") -> None:
         raise RuntimeError(
             "Diffusion-Gemma FlashInfer does not support scheduler_policy='paged' yet."
         )
-    _reject_unsupported_quantization(model_config)
-    model_config.quant_config = None
+    model_config.quant_config = _resolve_quant_config(
+        model_config, args.quantization
+    )
     if args.scheduler_policy == "paged" and (
         args.attention_backend != "flashinfer"
         or args.kv_cache_layout != "paged"
