@@ -122,10 +122,10 @@ RUN set -eux; \
 RUN set -eux; \
     python -m pip install \
         triton==3.4.0 \
-        transformers==4.57.0 \
+        transformers==5.15.1 \
         tokenizers==0.22.1 \
-        safetensors==0.6.2 \
-        huggingface-hub==0.35.3 \
+        safetensors==0.8.0 \
+        huggingface-hub==1.28.0 \
         numpy==2.3.3 \
         aiohttp==3.13.0 \
         fastapi==0.118.2 \
