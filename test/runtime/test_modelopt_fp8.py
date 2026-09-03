@@ -283,10 +283,19 @@ def test_nvfp4_rejects_hopper_before_weight_loading(monkeypatch):
         _validate_quantization_capability(config, "cuda:0")
 
 
+def test_fp8_rejects_ada_before_weight_loading(monkeypatch):
+    config = ModelOptFp8Config()
+    monkeypatch.setattr(torch.cuda, "get_device_capability", lambda device: (8, 9))
+
+    with pytest.raises(RuntimeError, match="requires CUDA compute capability 9.0"):
+        _validate_quantization_capability(config, "cuda:0")
+
+
 @pytest.mark.parametrize(
     ("config", "capability"),
     [
-        (ModelOptFp8Config(), (8, 9)),
+        (ModelOptFp8Config(), (9, 0)),
+        (ModelOptFp8Config(), (12, 0)),
         (ModelOptNvfp4Config(), (10, 0)),
         (ModelOptNvfp4Config(), (12, 0)),
     ],

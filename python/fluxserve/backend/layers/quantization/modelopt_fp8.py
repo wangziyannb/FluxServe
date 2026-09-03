@@ -90,7 +90,7 @@ class ModelOptFp8Config(QuantizationConfig):
 
     @classmethod
     def get_min_capability(cls) -> int:
-        return 89
+        return 90
 
     @classmethod
     def get_config_filenames(cls) -> List[str]:
