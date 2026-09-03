@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import inspect
 from abc import ABC, abstractmethod
+from fnmatch import fnmatchcase
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 
 import torch
@@ -31,6 +32,23 @@ from torch import nn
 if TYPE_CHECKING:
     from fluxserve.backend.layers.moe.moe_runner import MoeRunnerConfig
     from fluxserve.backend.layers.moe.token_dispatcher import CombineInput, DispatchOutput
+
+
+def is_layer_excluded(prefix: str, patterns: List[str]) -> bool:
+    """Match ModelOpt ignore entries against a layer prefix."""
+    prefixes = {prefix, prefix.removeprefix("language_model.")}
+    for pattern in patterns:
+        normalized_pattern = pattern.removeprefix("language_model.")
+        for candidate in prefixes:
+            if fnmatchcase(candidate, pattern) or fnmatchcase(
+                candidate, normalized_pattern
+            ):
+                return True
+            if candidate == normalized_pattern or candidate.startswith(
+                normalized_pattern + "."
+            ):
+                return True
+    return False
 
 
 class QuantizeMethodBase(ABC):

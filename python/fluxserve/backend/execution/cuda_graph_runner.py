@@ -177,10 +177,21 @@ class CudaGraphRunner:
         self.max_bs = max(self.capture_bs)
         self.seq_len_fill_value = 0
         self.num_tokens_per_bs = self.model_runner.block_length
-        self.prefill_lengths = model_runner.prefill_lengths
-        self.cache_lengths = model_runner.cache_lengths
+        self.prefill_lengths = (
+            model_runner.prefill_lengths
+            if model_runner.runner_config.enable_prefill_cuda_graph
+            else []
+        )
+        self.cache_lengths = (
+            model_runner.cache_lengths
+            if model_runner.runner_config.enable_decode_cuda_graph
+            else []
+        )
         self.decoding_lengths = model_runner.decoding_lengths
-        self.max_num_token = self.max_bs * max(self.num_tokens_per_bs*2, max(self.prefill_lengths))
+        self.max_num_token = self.max_bs * max(
+            self.num_tokens_per_bs * 2,
+            max(self.prefill_lengths, default=self.num_tokens_per_bs),
+        )
         self.tp_size = get_attention_tp_size()
         self.enable_compile = model_runner.enable_compile
         if self.enable_compile:

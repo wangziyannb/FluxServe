@@ -26,6 +26,7 @@ from fluxserve.backend.layers.quantization.base_config import (
     LinearMethodBase,
     QuantizationConfig,
     QuantizeMethodBase,
+    is_layer_excluded,
 )
 
 if TYPE_CHECKING:
@@ -229,10 +230,7 @@ class ModelOptNvfp4Config(QuantizationConfig):
         return "modelopt_nvfp4"
 
     def _is_excluded(self, prefix: str) -> bool:
-        normalized = prefix.removeprefix("language_model.")
-        return any(
-            module in prefix or module in normalized for module in self.exclude_modules
-        )
+        return is_layer_excluded(prefix, self.exclude_modules)
 
     def get_quant_method(
         self, layer: torch.nn.Module, prefix: str
@@ -240,11 +238,17 @@ class ModelOptNvfp4Config(QuantizationConfig):
         from fluxserve.backend.layers.linear import LinearBase
         from fluxserve.backend.layers.moe.fused_moe_triton import FusedMoE
 
-        if self._is_excluded(prefix):
-            return None
         if isinstance(layer, LinearBase):
+            if self._is_excluded(prefix):
+                from fluxserve.backend.layers.quantization.unquant import (
+                    UnquantizedLinearMethod,
+                )
+
+                return UnquantizedLinearMethod()
             return ModelOptNvfp4LinearMethod(self)
         if isinstance(layer, FusedMoE):
+            if self._is_excluded(prefix):
+                return None
             return ModelOptNvfp4MoEMethod(self)
         return None
 

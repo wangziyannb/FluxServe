@@ -246,6 +246,23 @@ def _resolve_quant_config(model_config, quantization: str = "auto"):
     return quant_config
 
 
+def _validate_quantization_capability(quant_config, device: str | torch.device) -> None:
+    if quant_config is None:
+        return
+    normalized_device = (
+        f"cuda:{device}" if str(device).isdigit() else torch.device(device)
+    )
+    major, minor = torch.cuda.get_device_capability(normalized_device)
+    capability = major * 10 + minor
+    minimum = quant_config.get_min_capability()
+    if capability < minimum:
+        raise RuntimeError(
+            f"{quant_config.get_name()} requires CUDA compute capability "
+            f"{minimum // 10}.{minimum % 10} or newer, but {device} is "
+            f"{major}.{minor}."
+        )
+
+
 def normalize_diffusion_gemma_serve_args(args, model_config) -> bool:
     architectures = set(getattr(model_config, "architectures", ()) or ())
     is_diffusion_gemma = (
@@ -378,6 +395,7 @@ def _serve_worker(args, *, init_method: str = "env://") -> None:
         torch.cuda.set_device(device_index)
 
     try:
+        _validate_quantization_capability(model_config.quant_config, args.device)
         initialize_dp_attention(server_args=server_args, model_config=model_config)
         initialize_moe_config(server_args)
 

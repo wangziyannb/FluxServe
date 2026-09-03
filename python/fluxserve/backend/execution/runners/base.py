@@ -71,6 +71,18 @@ class ModelRunner:
         self.max_length = max(self.runner_config.max_length, max(self.cache_lengths))
         self.decoding_lengths = list(self.runner_config.decoding_lengths)
         self.supported_batch_sizes = list(self.runner_config.supported_batch_sizes)
+        if (
+            self.runner_config.attention_backend == "flex"
+            and self.runner_config.enable_prefill_cuda_graph
+        ):
+            logger.info(
+                "Disabling prefill CUDA graph because FlexAttention uses "
+                "BlockMask objects that are not supported by the generic graph runner."
+            )
+            self.runner_config.enable_prefill_cuda_graph = False
+            self.runner_config.enable_cuda_graph = bool(
+                self.runner_config.enable_decode_cuda_graph
+            )
         self.enable_flashinfer_attention_graph = bool(
             self.runner_config.enable_cuda_graph
             and self.runner_config.attention_backend == "flashinfer"
@@ -249,9 +261,16 @@ class ModelRunner:
         )
         length = input_ids.shape[1]
         cache_length = past_key_values.shape[4] if past_key_values is not None else 0
+        phase_graph_enabled = (
+            self.runner_config.enable_decode_cuda_graph
+            if is_decode_phase
+            else self.runner_config.enable_prefill_cuda_graph
+        )
 
         can_run_graph = bool(
-            self.graph_runner
+            phase_graph_enabled
+            and not _is_flex_block_mask(attention_mask)
+            and self.graph_runner
             and self.graph_runner.can_run(
                 input_ids,
                 position_ids,

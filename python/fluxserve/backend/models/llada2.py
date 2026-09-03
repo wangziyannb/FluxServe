@@ -116,6 +116,32 @@ logger = logging.getLogger(__name__)
 _is_cuda = is_cuda()
 
 
+def _shard_qkv_rows(
+    value: torch.Tensor,
+    *,
+    hidden_size: int,
+    total_num_heads: int,
+    total_kv_heads: int,
+    tp_rank: int,
+    tp_size: int,
+) -> torch.Tensor:
+    """Shard fused QKV rows while preserving GQA KV replication."""
+    q_dim = hidden_size
+    kv_dim = hidden_size * total_kv_heads // total_num_heads
+    q_part = q_dim // tp_size
+    q_value = value.narrow(0, tp_rank * q_part, q_part)
+    if tp_size > total_kv_heads:
+        replicas = tp_size // total_kv_heads
+        kv_part = kv_dim // total_kv_heads
+        kv_rank = tp_rank // replicas
+    else:
+        kv_part = kv_dim // tp_size
+        kv_rank = tp_rank
+    k_value = value.narrow(0, q_dim + kv_rank * kv_part, kv_part)
+    v_value = value.narrow(0, q_dim + kv_dim + kv_rank * kv_part, kv_part)
+    return torch.cat([q_value, k_value, v_value], dim=0)
+
+
 class H2Embed:
     def __init__(self, embedding: VocabParallelEmbedding, tau: float = 1.0):
         """
@@ -1132,7 +1158,7 @@ class LLaDA2LLM(nn.Module):
                         value = value.unsqueeze(0).repeat(3)    
                     weights[key] = value 
             if value.shape != params_dict[key].shape:
-                if not re.search(r'query_key_value.weight$', key):
+                if not re.search(r'query_key_value\.(weight|weight_scale)$', key):
                     mismatch_dim = 0 if value.shape[0] != params_dict[key].shape[0] else 1
                     if mismatch_dim==0:
                         part_size = params_dict[key].shape[0]
@@ -1153,24 +1179,14 @@ class LLaDA2LLM(nn.Module):
                 else:
                     attn_tp_rank = get_attention_tp_rank()
                     attn_tp_size = get_attention_tp_size()
-                    hidden_size = self.config.hidden_size
-                    total_num_heads = self.config.num_attention_heads
-                    total_kv_heads = self.config.num_key_value_heads
-                    q_dim = hidden_size
-                    q_part = q_dim // attn_tp_size
-                    q_weight = value[attn_tp_rank * q_part : (attn_tp_rank + 1) * q_part]
-                    if attn_tp_size > total_kv_heads:
-                        n_replica = attn_tp_size//total_kv_heads
-                        kv_dim = hidden_size * total_kv_heads // total_num_heads
-                        kv_part = kv_dim // total_kv_heads
-                        k_weight = value[q_dim + (attn_tp_rank//n_replica) * kv_part : q_dim + ((attn_tp_rank//n_replica) + 1) * kv_part]
-                        v_weight = value[q_dim + kv_dim + (attn_tp_rank//n_replica) * kv_part : q_dim + kv_dim + ((attn_tp_rank//n_replica) + 1) * kv_part]
-                    else:
-                        kv_dim = hidden_size * total_kv_heads // total_num_heads
-                        kv_part = kv_dim // attn_tp_size
-                        k_weight = value[q_dim + attn_tp_rank * kv_part : q_dim + (attn_tp_rank + 1) * kv_part]
-                        v_weight = value[q_dim + kv_dim + attn_tp_rank * kv_part : q_dim + kv_dim + (attn_tp_rank + 1) * kv_part]
-                    weights[key] = torch.cat([q_weight, k_weight, v_weight], dim=0)
+                    weights[key] = _shard_qkv_rows(
+                        value,
+                        hidden_size=self.config.hidden_size,
+                        total_num_heads=self.config.num_attention_heads,
+                        total_kv_heads=self.config.num_key_value_heads,
+                        tp_rank=attn_tp_rank,
+                        tp_size=attn_tp_size,
+                    )
                     assert weights[key].shape == params_dict[key].shape
 
         params_dict = dict(self.named_parameters())

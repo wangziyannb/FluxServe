@@ -516,7 +516,11 @@ def warmup_runner(runner, args, device, logger):
 
 @torch.no_grad()
 def run_worker(args, *, init_method: str = "env://"):
-    from fluxserve.cli import _resolve_quant_config, set_process_title
+    from fluxserve.cli import (
+        _resolve_quant_config,
+        _validate_quantization_capability,
+        set_process_title,
+    )
 
     server_args = None
     context = None
@@ -548,6 +552,7 @@ def run_worker(args, *, init_method: str = "env://"):
     model_config.quant_config = _resolve_quant_config(
         model_config, args.quantization
     )
+    _validate_quantization_capability(model_config.quant_config, device)
     all_input_ids, prompts, questions, ids = load_inputs(
         args.dataset,
         tokenizer,

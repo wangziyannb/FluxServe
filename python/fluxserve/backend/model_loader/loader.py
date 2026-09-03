@@ -43,6 +43,28 @@ from fluxserve.backend.models import (
 from fluxserve.backend.utils.runtime_utils import tqdm_progress as tqdm
 
 
+def _shard_merged_column_parts(
+    parts: list[torch.Tensor], rank: int, world_size: int
+) -> torch.Tensor:
+    """Shard each logical column-parallel matrix before fusing it."""
+    sharded = []
+    for part in parts:
+        if part.shape[0] % world_size != 0:
+            raise ValueError(
+                f"Cannot shard output dimension {part.shape[0]} across "
+                f"TP world size {world_size}."
+            )
+        shard_size = part.shape[0] // world_size
+        sharded.append(part.narrow(0, rank * shard_size, shard_size))
+    return torch.cat(sharded, dim=0)
+
+
+def _module_quantization_name(module: nn.Module | None) -> str | None:
+    method = getattr(module, "quant_method", None)
+    config = getattr(method, "quant_config", None)
+    return config.get_name() if config is not None else None
+
+
 class DefaultModelLoader:
     def load_model(
         self,
@@ -156,7 +178,6 @@ class DefaultModelLoader:
         device,
     ):
         new_state_dict = {}
-        is_nvfp4 = model.quant_config.get_name() == "modelopt_nvfp4"
         gate_projs = [{} for _ in range(num_layers)]
         gate_input_scales = [{} for _ in range(num_layers)]
         up_input_scales = [{} for _ in range(num_layers)]
@@ -233,6 +254,17 @@ class DefaultModelLoader:
                 )
 
             if len(gate_projs[layer_id]) > 0:
+                experts = getattr(
+                    getattr(model.model.layers[layer_id], "mlp", None),
+                    "experts",
+                    None,
+                )
+                layer_quantization = _module_quantization_name(experts)
+                layer_is_quantized = layer_quantization in {
+                    "modelopt_fp8",
+                    "modelopt_nvfp4",
+                }
+                layer_is_nvfp4 = layer_quantization == "modelopt_nvfp4"
                 w13_weight = []
                 w2_weight = []
                 w13_input_scale = []
@@ -246,6 +278,19 @@ class DefaultModelLoader:
                     gate_proj = gate_projs[layer_id][expert_id].to(device)
                     up_proj = up_projs[layer_id][expert_id].to(device)
                     down_proj = down_projs[layer_id][expert_id].to(device)
+
+                    w13_weight.append(
+                        torch.cat(
+                            [up_proj, gate_proj]
+                            if layer_is_nvfp4
+                            else [gate_proj, up_proj],
+                            dim=0,
+                        )
+                    )
+                    w2_weight.append(down_proj)
+                    if not layer_is_quantized:
+                        continue
+
                     gate_weight_scale = gate_weight_scales[layer_id][expert_id].to(device)
                     up_weight_scale = up_weight_scales[layer_id][expert_id].to(device)
                     down_weight_scale = down_weight_scales[layer_id][expert_id].to(device)
@@ -254,27 +299,19 @@ class DefaultModelLoader:
                         expert_id, gate_input_scales[layer_id][expert_id]
                     ).to(device)
                     down_input_scale = down_input_scales[layer_id][expert_id].to(device)
-
-                    w13_weight.append(
-                        torch.cat(
-                            [up_proj, gate_proj] if is_nvfp4 else [gate_proj, up_proj],
-                            dim=0,
-                        )
-                    )
-                    w2_weight.append(down_proj)
                     w13_input_scale.append(
                         torch.stack([up_input_scale, gate_input_scale], dim=0)
-                        if is_nvfp4
+                        if layer_is_nvfp4
                         else gate_input_scale
                     )
                     w13_weight_scale.append(
                         torch.cat([up_weight_scale, gate_weight_scale], dim=0)
-                        if is_nvfp4
+                        if layer_is_nvfp4
                         else torch.stack([gate_weight_scale, up_weight_scale], dim=0)
                     )
                     w2_input_scale.append(down_input_scale)
                     w2_weight_scale.append(down_weight_scale)
-                    if is_nvfp4:
+                    if layer_is_nvfp4:
                         w13_weight_scale_2.append(
                             torch.stack(
                                 [
@@ -307,34 +344,39 @@ class DefaultModelLoader:
                     )
                     .contiguous()
                 )
-                new_state_dict[f"model.layers.{layer_id}.mlp.experts.w13_input_scale"] = (
-                    torch.stack(w13_input_scale, dim=0).contiguous()
-                )
-                new_state_dict[f"model.layers.{layer_id}.mlp.experts.w13_weight_scale"] = (
-                    tp_split(
-                        torch.stack(w13_weight_scale, dim=0),
-                        dim=1,
-                        rank=moe_tp_rank,
-                        world=moe_tp_size,
-                        is_w13=True,
-                    ).contiguous()
-                    if is_nvfp4
-                    else torch.stack(w13_weight_scale, dim=0).contiguous()
-                )
-                new_state_dict[f"model.layers.{layer_id}.mlp.experts.w2_input_scale"] = (
-                    torch.stack(w2_input_scale, dim=0).contiguous()
-                )
-                new_state_dict[f"model.layers.{layer_id}.mlp.experts.w2_weight_scale"] = (
-                    tp_split(
-                        torch.stack(w2_weight_scale, dim=0),
-                        dim=2,
-                        rank=moe_tp_rank,
-                        world=moe_tp_size,
-                    ).contiguous()
-                    if is_nvfp4
-                    else torch.stack(w2_weight_scale, dim=0).contiguous()
-                )
-                if is_nvfp4:
+                if layer_is_quantized:
+                    new_state_dict[
+                        f"model.layers.{layer_id}.mlp.experts.w13_input_scale"
+                    ] = torch.stack(w13_input_scale, dim=0).contiguous()
+                    new_state_dict[
+                        f"model.layers.{layer_id}.mlp.experts.w13_weight_scale"
+                    ] = (
+                        tp_split(
+                            torch.stack(w13_weight_scale, dim=0),
+                            dim=1,
+                            rank=moe_tp_rank,
+                            world=moe_tp_size,
+                            is_w13=True,
+                        ).contiguous()
+                        if layer_is_nvfp4
+                        else torch.stack(w13_weight_scale, dim=0).contiguous()
+                    )
+                    new_state_dict[
+                        f"model.layers.{layer_id}.mlp.experts.w2_input_scale"
+                    ] = torch.stack(w2_input_scale, dim=0).contiguous()
+                    new_state_dict[
+                        f"model.layers.{layer_id}.mlp.experts.w2_weight_scale"
+                    ] = (
+                        tp_split(
+                            torch.stack(w2_weight_scale, dim=0),
+                            dim=2,
+                            rank=moe_tp_rank,
+                            world=moe_tp_size,
+                        ).contiguous()
+                        if layer_is_nvfp4
+                        else torch.stack(w2_weight_scale, dim=0).contiguous()
+                    )
+                if layer_is_nvfp4:
                     new_state_dict[
                         f"model.layers.{layer_id}.mlp.experts.w13_weight_scale_2"
                     ] = torch.stack(w13_weight_scale_2, dim=0).contiguous()
@@ -541,7 +583,9 @@ class DefaultModelLoader:
                 new_state_dict[
                     f"model.layers.{layer_id}.mlp.shared_experts.gate_up_proj.weight_scale"
                 ] = (
-                    torch.cat(scale_parts, dim=0)
+                    _shard_merged_column_parts(
+                        scale_parts, shared_tp_rank, shared_tp_size
+                    )
                     if is_nvfp4
                     else torch.stack(scale_parts, dim=0)
                 )
@@ -621,7 +665,7 @@ class DefaultModelLoader:
                 new_state_dict[
                     f"model.layers.{layer_id}.mlp.gate_up_proj.weight_scale"
                 ] = (
-                    torch.cat(scale_parts, dim=0)
+                    _shard_merged_column_parts(scale_parts, mlp_tp_rank, mlp_tp_size)
                     if is_nvfp4
                     else torch.stack(scale_parts, dim=0)
                 )
