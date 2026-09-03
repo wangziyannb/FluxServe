@@ -1,5 +1,6 @@
 ARG CUDA_VERSION=12.9.1
 FROM nvidia/cuda:${CUDA_VERSION}-cudnn-devel-ubuntu22.04
+ARG FLASHINFER_DLLM_REV=6055bba6d7defefe69fe246473647165300b557a
 
 LABEL org.opencontainers.image.authors="Youpeng Zhao" \
       org.opencontainers.image.description="FluxServe image with CUDA 12.9 userspace"
@@ -8,7 +9,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     TZ=America/New_York \
     CUDA_HOME=/usr/local/cuda \
     TORCH_CUDA_ARCH_LIST=9.0 \
-    MAX_JOBS=64 \
+    MAX_JOBS=4 \
     FLASHINFER_WORKSPACE_BASE=/tmp \
     LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64
 
@@ -148,6 +149,7 @@ RUN set -eux; \
         -b feature/block-extend \
         /flashinfer-dllm-workspace/flashinfer-dllm; \
     cd /flashinfer-dllm-workspace/flashinfer-dllm; \
+    git checkout --detach "${FLASHINFER_DLLM_REV}"; \
     git submodule update --init --recursive; \
     python -m pip install -v .; \
     rm -rf /root/.cache/pip
