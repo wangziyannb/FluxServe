@@ -1,5 +1,13 @@
 ## Offline Benchmark
 FluxServe supports offline thorughput benchamrk with json-style input files.
+
+ModelOpt serialized static FP8 and NVFP4 checkpoints are detected by default.
+Use `--quantization modelopt_fp8` or `--quantization modelopt_nvfp4` to require
+a specific format and fail if the checkpoint metadata does not match. NVFP4
+execution requires a Blackwell GPU and uses the FlashInfer revision pinned in
+`docker/Dockerfile.flux-cu129`. The first NVFP4 MoE run compiles the device
+kernel, so warm up the model before recording throughput.
+
 ```bash
 fluxserve bench_offline \
   --model inclusionAI/LLaDA2.0-mini \

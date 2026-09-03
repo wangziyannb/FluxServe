@@ -24,20 +24,24 @@
 
 from flux_kernel.ops import (
     apply_rope_with_cos_sin_cache_inplace,
+    interleave_nvfp4_block_scale,
     moe_align_block_size,
     moe_fused_gate,
     qk_rmsnorm,
     rmsnorm,
     silu_and_mul,
     static_scaled_fp8_quant,
+    static_scaled_nvfp4_quant,
 )
 
 __all__ = [
     "apply_rope_with_cos_sin_cache_inplace",
+    "interleave_nvfp4_block_scale",
     "moe_align_block_size",
     "moe_fused_gate",
     "qk_rmsnorm",
     "rmsnorm",
     "silu_and_mul",
     "static_scaled_fp8_quant",
+    "static_scaled_nvfp4_quant",
 ]

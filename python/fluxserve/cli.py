@@ -86,9 +86,9 @@ def build_parser() -> argparse.ArgumentParser:
     serve.add_argument("--model", "--model-name", dest="model_name", required=True)
     serve.add_argument(
         "--quantization",
-        choices=("auto", "modelopt_fp8"),
+        choices=("auto", "modelopt_fp8", "modelopt_nvfp4"),
         default="auto",
-        help="Quantization format. Auto-detects ModelOpt serialized static FP8.",
+        help="Quantization format. Auto-detects ModelOpt static FP8 or NVFP4.",
     )
     serve.add_argument("--host", default="0.0.0.0")
     serve.add_argument("--port", type=int, default=8000)
@@ -209,9 +209,10 @@ def build_parser() -> argparse.ArgumentParser:
 def _resolve_quant_config(model_config, quantization: str = "auto"):
     metadata = getattr(model_config, "quantization_config", None)
     if metadata in (None, {}):
-        if quantization == "modelopt_fp8":
+        if quantization in ("modelopt_fp8", "modelopt_nvfp4"):
             raise ValueError(
-                "--quantization modelopt_fp8 requires serialized ModelOpt FP8 metadata."
+                f"--quantization {quantization} requires matching serialized "
+                "ModelOpt metadata."
             )
         return None
     if not isinstance(metadata, dict):
@@ -219,15 +220,28 @@ def _resolve_quant_config(model_config, quantization: str = "auto"):
 
     from fluxserve.backend.layers.quantization import get_quantization_config
 
-    config_class = get_quantization_config("modelopt_fp8")
+    nested = metadata.get("quantization")
+    quant = nested if isinstance(nested, dict) else metadata
+    quant_algo = str(quant.get("quant_algo", "")).upper()
+    detected = {
+        "FP8": "modelopt_fp8",
+        "NVFP4": "modelopt_nvfp4",
+    }.get(quant_algo)
+    selected = detected if quantization == "auto" else quantization
+    if selected not in ("modelopt_fp8", "modelopt_nvfp4"):
+        raise ValueError(
+            "Unsupported checkpoint quantization format. FluxServe supports "
+            "ModelOpt serialized static FP8 and NVFP4."
+        )
+    config_class = get_quantization_config(selected)
     try:
         quant_config = config_class.from_config(metadata)
     except ValueError as exc:
         raise ValueError(
-            "Unsupported checkpoint quantization format. FluxServe only supports "
-            "ModelOpt serialized static per-tensor FP8."
+            "Unsupported checkpoint quantization format. FluxServe supports "
+            "ModelOpt serialized static FP8 and NVFP4."
         ) from exc
-    if quantization not in ("auto", "modelopt_fp8"):
+    if quantization not in ("auto", "modelopt_fp8", "modelopt_nvfp4"):
         raise ValueError(f"Unsupported quantization selection: {quantization!r}")
     return quant_config
 

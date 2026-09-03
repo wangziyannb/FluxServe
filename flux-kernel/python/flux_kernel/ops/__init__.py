@@ -20,7 +20,11 @@
 
 from flux_kernel.ops.activation import silu_and_mul
 from flux_kernel.ops.moe import moe_align_block_size, moe_fused_gate
-from flux_kernel.ops.quantization import static_scaled_fp8_quant
+from flux_kernel.ops.quantization import (
+    interleave_nvfp4_block_scale,
+    static_scaled_fp8_quant,
+    static_scaled_nvfp4_quant,
+)
 from flux_kernel.ops.rmsnorm import qk_rmsnorm, rmsnorm
 from flux_kernel.ops.rope import apply_rope_with_cos_sin_cache_inplace
 
@@ -30,6 +34,8 @@ __all__ = [
     "silu_and_mul",
     "moe_fused_gate",
     "moe_align_block_size",
+    "interleave_nvfp4_block_scale",
     "static_scaled_fp8_quant",
+    "static_scaled_nvfp4_quant",
     "apply_rope_with_cos_sin_cache_inplace",
 ]

@@ -20,7 +20,7 @@
 
 from fluxserve.backend.layers.quantization.base_config import QuantizationConfig
 
-QUANTIZATION_METHODS = ("modelopt_fp8",)
+QUANTIZATION_METHODS = ("modelopt_fp8", "modelopt_nvfp4")
 
 
 def get_quantization_config(quantization: str):
@@ -30,6 +30,12 @@ def get_quantization_config(quantization: str):
         )
 
         return ModelOptFp8Config
+    if quantization == "modelopt_nvfp4":
+        from fluxserve.backend.layers.quantization.modelopt_nvfp4 import (
+            ModelOptNvfp4Config,
+        )
+
+        return ModelOptNvfp4Config
     raise ValueError(
         f"Invalid quantization method: {quantization}. "
         f"Available methods: {list(QUANTIZATION_METHODS)}"

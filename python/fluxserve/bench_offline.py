@@ -801,9 +801,9 @@ def add_bench_offline_subparser(subparsers) -> None:
     parser.add_argument("--model", "--model-name", "--model_name", dest="model_name", required=True)
     parser.add_argument(
         "--quantization",
-        choices=("auto", "modelopt_fp8"),
+        choices=("auto", "modelopt_fp8", "modelopt_nvfp4"),
         default="auto",
-        help="Quantization format. Auto-detects ModelOpt serialized static FP8.",
+        help="Quantization format. Auto-detects ModelOpt static FP8 or NVFP4.",
     )
     parser.add_argument("--dataset", required=True)
     parser.add_argument("--device", default="cuda")

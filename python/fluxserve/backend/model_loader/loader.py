@@ -156,14 +156,19 @@ class DefaultModelLoader:
         device,
     ):
         new_state_dict = {}
+        is_nvfp4 = model.quant_config.get_name() == "modelopt_nvfp4"
         gate_projs = [{} for _ in range(num_layers)]
         gate_input_scales = [{} for _ in range(num_layers)]
+        up_input_scales = [{} for _ in range(num_layers)]
         gate_weight_scales = [{} for _ in range(num_layers)]
+        gate_weight_scales_2 = [{} for _ in range(num_layers)]
         up_projs = [{} for _ in range(num_layers)]
         up_weight_scales = [{} for _ in range(num_layers)]
+        up_weight_scales_2 = [{} for _ in range(num_layers)]
         down_projs = [{} for _ in range(num_layers)]
         down_input_scales = [{} for _ in range(num_layers)]
         down_weight_scales = [{} for _ in range(num_layers)]
+        down_weight_scales_2 = [{} for _ in range(num_layers)]
         moe_tp_rank = get_moe_tensor_parallel_rank()
         moe_tp_size = get_moe_tensor_parallel_world_size()
         for key, value in tqdm.tqdm(state_dict.items()):
@@ -171,15 +176,23 @@ class DefaultModelLoader:
                 layer_id = int(key.split(".mlp.experts.")[0].split(".")[-1])
                 expert_id = int(key.split(".mlp.experts.")[1].split(".")[0])
                 if layer_id < num_layers:
-                    if re.search(r"experts\.\d{1,4}\.gate_proj\.input_scale", key):
+                    if re.search(r"experts\.\d{1,4}\.gate_proj\.input_scale$", key):
                         gate_input_scales[layer_id][expert_id] = value
-                    elif re.search(r"experts\.\d{1,4}\.gate_proj\.weight_scale", key):
+                    elif re.search(r"experts\.\d{1,4}\.up_proj\.input_scale$", key):
+                        up_input_scales[layer_id][expert_id] = value
+                    elif re.search(r"experts\.\d{1,4}\.gate_proj\.weight_scale_2$", key):
+                        gate_weight_scales_2[layer_id][expert_id] = value
+                    elif re.search(r"experts\.\d{1,4}\.up_proj\.weight_scale_2$", key):
+                        up_weight_scales_2[layer_id][expert_id] = value
+                    elif re.search(r"experts\.\d{1,4}\.down_proj\.weight_scale_2$", key):
+                        down_weight_scales_2[layer_id][expert_id] = value
+                    elif re.search(r"experts\.\d{1,4}\.gate_proj\.weight_scale$", key):
                         gate_weight_scales[layer_id][expert_id] = value
-                    elif re.search(r"experts\.\d{1,4}\.up_proj\.weight_scale", key):
+                    elif re.search(r"experts\.\d{1,4}\.up_proj\.weight_scale$", key):
                         up_weight_scales[layer_id][expert_id] = value
-                    elif re.search(r"experts\.\d{1,4}\.down_proj\.input_scale", key):
+                    elif re.search(r"experts\.\d{1,4}\.down_proj\.input_scale$", key):
                         down_input_scales[layer_id][expert_id] = value
-                    elif re.search(r"experts\.\d{1,4}\.down_proj\.weight_scale", key):
+                    elif re.search(r"experts\.\d{1,4}\.down_proj\.weight_scale$", key):
                         down_weight_scales[layer_id][expert_id] = value
                     elif re.search(r"experts\.\d{1,4}\.gate_proj\.weight$", key):
                         gate_projs[layer_id][expert_id] = value
@@ -224,8 +237,10 @@ class DefaultModelLoader:
                 w2_weight = []
                 w13_input_scale = []
                 w13_weight_scale = []
+                w13_weight_scale_2 = []
                 w2_input_scale = []
                 w2_weight_scale = []
+                w2_weight_scale_2 = []
                 for expert_id in per_gpu_expert_mapping[layer_id]:
                     expert_id = int(expert_id)
                     gate_proj = gate_projs[layer_id][expert_id].to(device)
@@ -235,16 +250,43 @@ class DefaultModelLoader:
                     up_weight_scale = up_weight_scales[layer_id][expert_id].to(device)
                     down_weight_scale = down_weight_scales[layer_id][expert_id].to(device)
                     gate_input_scale = gate_input_scales[layer_id][expert_id].to(device)
+                    up_input_scale = up_input_scales[layer_id].get(
+                        expert_id, gate_input_scales[layer_id][expert_id]
+                    ).to(device)
                     down_input_scale = down_input_scales[layer_id][expert_id].to(device)
 
-                    w13_weight.append(torch.cat([gate_proj, up_proj], dim=0))
+                    w13_weight.append(
+                        torch.cat(
+                            [up_proj, gate_proj] if is_nvfp4 else [gate_proj, up_proj],
+                            dim=0,
+                        )
+                    )
                     w2_weight.append(down_proj)
-                    w13_input_scale.append(gate_input_scale)
+                    w13_input_scale.append(
+                        torch.stack([up_input_scale, gate_input_scale], dim=0)
+                        if is_nvfp4
+                        else gate_input_scale
+                    )
                     w13_weight_scale.append(
-                        torch.stack([gate_weight_scale, up_weight_scale], dim=0)
+                        torch.cat([up_weight_scale, gate_weight_scale], dim=0)
+                        if is_nvfp4
+                        else torch.stack([gate_weight_scale, up_weight_scale], dim=0)
                     )
                     w2_input_scale.append(down_input_scale)
                     w2_weight_scale.append(down_weight_scale)
+                    if is_nvfp4:
+                        w13_weight_scale_2.append(
+                            torch.stack(
+                                [
+                                    up_weight_scales_2[layer_id][expert_id],
+                                    gate_weight_scales_2[layer_id][expert_id],
+                                ],
+                                dim=0,
+                            )
+                        )
+                        w2_weight_scale_2.append(
+                            down_weight_scales_2[layer_id][expert_id]
+                        )
 
                 new_state_dict[f"model.layers.{layer_id}.mlp.experts.w13_weight"] = (
                     tp_split(
@@ -269,14 +311,36 @@ class DefaultModelLoader:
                     torch.stack(w13_input_scale, dim=0).contiguous()
                 )
                 new_state_dict[f"model.layers.{layer_id}.mlp.experts.w13_weight_scale"] = (
-                    torch.stack(w13_weight_scale, dim=0).contiguous()
+                    tp_split(
+                        torch.stack(w13_weight_scale, dim=0),
+                        dim=1,
+                        rank=moe_tp_rank,
+                        world=moe_tp_size,
+                        is_w13=True,
+                    ).contiguous()
+                    if is_nvfp4
+                    else torch.stack(w13_weight_scale, dim=0).contiguous()
                 )
                 new_state_dict[f"model.layers.{layer_id}.mlp.experts.w2_input_scale"] = (
                     torch.stack(w2_input_scale, dim=0).contiguous()
                 )
                 new_state_dict[f"model.layers.{layer_id}.mlp.experts.w2_weight_scale"] = (
-                    torch.stack(w2_weight_scale, dim=0).contiguous()
+                    tp_split(
+                        torch.stack(w2_weight_scale, dim=0),
+                        dim=2,
+                        rank=moe_tp_rank,
+                        world=moe_tp_size,
+                    ).contiguous()
+                    if is_nvfp4
+                    else torch.stack(w2_weight_scale, dim=0).contiguous()
                 )
+                if is_nvfp4:
+                    new_state_dict[
+                        f"model.layers.{layer_id}.mlp.experts.w13_weight_scale_2"
+                    ] = torch.stack(w13_weight_scale_2, dim=0).contiguous()
+                    new_state_dict[
+                        f"model.layers.{layer_id}.mlp.experts.w2_weight_scale_2"
+                    ] = torch.stack(w2_weight_scale_2, dim=0).contiguous()
                 model.model.layers[layer_id].mlp.experts.expert_map_cpu = (
                     per_gpu_inverse_mapping[layer_id]
                 )
@@ -424,6 +488,10 @@ class DefaultModelLoader:
         new_state_dict,
         layer_id: int,
     ) -> None:
+        is_nvfp4 = (
+            model.quant_config is not None
+            and model.quant_config.get_name() == "modelopt_nvfp4"
+        )
         if f"model.layers.{layer_id}.mlp.gate.expert_bias" in state_dict:
             new_state_dict[f"model.layers.{layer_id}.mlp.correction_bias"] = state_dict[
                 f"model.layers.{layer_id}.mlp.gate.expert_bias"
@@ -462,18 +530,20 @@ class DefaultModelLoader:
                 f"model.layers.{layer_id}.mlp.shared_experts.gate_proj.weight_scale"
                 in state_dict
             ):
+                scale_parts = [
+                    state_dict[
+                        f"model.layers.{layer_id}.mlp.shared_experts.gate_proj.weight_scale"
+                    ],
+                    state_dict[
+                        f"model.layers.{layer_id}.mlp.shared_experts.up_proj.weight_scale"
+                    ],
+                ]
                 new_state_dict[
                     f"model.layers.{layer_id}.mlp.shared_experts.gate_up_proj.weight_scale"
-                ] = torch.stack(
-                    [
-                        state_dict[
-                            f"model.layers.{layer_id}.mlp.shared_experts.gate_proj.weight_scale"
-                        ],
-                        state_dict[
-                            f"model.layers.{layer_id}.mlp.shared_experts.up_proj.weight_scale"
-                        ],
-                    ],
-                    dim=0,
+                ] = (
+                    torch.cat(scale_parts, dim=0)
+                    if is_nvfp4
+                    else torch.stack(scale_parts, dim=0)
                 )
                 new_state_dict[
                     f"model.layers.{layer_id}.mlp.shared_experts.gate_up_proj.input_scale"
@@ -488,11 +558,28 @@ class DefaultModelLoader:
                     ],
                     dim=0,
                 )
+                if is_nvfp4:
+                    new_state_dict[
+                        f"model.layers.{layer_id}.mlp.shared_experts.gate_up_proj.weight_scale_2"
+                    ] = torch.stack(
+                        [
+                            state_dict[
+                                f"model.layers.{layer_id}.mlp.shared_experts."
+                                "gate_proj.weight_scale_2"
+                            ],
+                            state_dict[
+                                f"model.layers.{layer_id}.mlp.shared_experts.up_proj.weight_scale_2"
+                            ],
+                        ],
+                        dim=0,
+                    )
             for suffix in (
                 "gate_proj.weight",
                 "up_proj.weight",
                 "gate_proj.weight_scale",
                 "up_proj.weight_scale",
+                "gate_proj.weight_scale_2",
+                "up_proj.weight_scale_2",
                 "gate_proj.input_scale",
                 "up_proj.input_scale",
             ):
@@ -523,18 +610,20 @@ class DefaultModelLoader:
                 )
             )
             if f"model.layers.{layer_id}.mlp.gate_proj.weight_scale" in state_dict:
+                scale_parts = [
+                    state_dict[
+                        f"model.layers.{layer_id}.mlp.gate_proj.weight_scale"
+                    ],
+                    state_dict[
+                        f"model.layers.{layer_id}.mlp.up_proj.weight_scale"
+                    ],
+                ]
                 new_state_dict[
                     f"model.layers.{layer_id}.mlp.gate_up_proj.weight_scale"
-                ] = torch.stack(
-                    [
-                        state_dict[
-                            f"model.layers.{layer_id}.mlp.gate_proj.weight_scale"
-                        ],
-                        state_dict[
-                            f"model.layers.{layer_id}.mlp.up_proj.weight_scale"
-                        ],
-                    ],
-                    dim=0,
+                ] = (
+                    torch.cat(scale_parts, dim=0)
+                    if is_nvfp4
+                    else torch.stack(scale_parts, dim=0)
                 )
                 new_state_dict[
                     f"model.layers.{layer_id}.mlp.gate_up_proj.input_scale"
@@ -547,11 +636,27 @@ class DefaultModelLoader:
                     ],
                     dim=0,
                 )
+                if is_nvfp4:
+                    new_state_dict[
+                        f"model.layers.{layer_id}.mlp.gate_up_proj.weight_scale_2"
+                    ] = torch.stack(
+                        [
+                            state_dict[
+                                f"model.layers.{layer_id}.mlp.gate_proj.weight_scale_2"
+                            ],
+                            state_dict[
+                                f"model.layers.{layer_id}.mlp.up_proj.weight_scale_2"
+                            ],
+                        ],
+                        dim=0,
+                    )
             for suffix in (
                 "gate_proj.weight",
                 "up_proj.weight",
                 "gate_proj.weight_scale",
                 "up_proj.weight_scale",
+                "gate_proj.weight_scale_2",
+                "up_proj.weight_scale_2",
                 "gate_proj.input_scale",
                 "up_proj.input_scale",
             ):

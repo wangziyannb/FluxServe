@@ -8,7 +8,7 @@
 
 ### Quantization Support
 - [x] ModelOpt serialized static per-tensor FP8
-- [ ] NVFP4
+- [x] ModelOpt serialized static NVFP4
 
 ### Hardware Support
 - [ ] AMD GPU ROCm
