@@ -436,9 +436,11 @@ def warmup_runner(runner, args, device, logger):
         # delta isolates graph capture rather than including the cache.
         # Diffusion-Gemma's heterogeneous cache is allocated by _paged_cache
         # before warmup and cannot use BlockDiffusionRunner.allocate_kv_cache.
+        # Mini-batch warmup must retain capacity for the full timed batch so
+        # generation reuses the same addresses and captured FlashInfer graphs.
         if is_llada2_graph_runner:
             runner.past_key_values = runner.allocate_kv_cache(
-                args.mini_batch_size
+                max(args.batch_size, args.mini_batch_size)
             )
         torch.cuda.synchronize(device)
         graph_allocated_before = torch.cuda.memory_allocated(device)
@@ -664,6 +666,7 @@ def run_worker(args, *, init_method: str = "env://"):
         flashinfer_graph = getattr(runner, "flashinfer_graph_runner", None)
         if flashinfer_graph is not None:
             flashinfer_graph.reset_serving_counts()
+        capture_counts_before = _flashinfer_capture_counts(runner)
         start = time.time()
         peak_kv_data_bytes = 0
         for i in iterator:
@@ -728,7 +731,10 @@ def run_worker(args, *, init_method: str = "env://"):
                 )
         stop = time.time()
 
-        _write_memory_and_graph_metrics(args, runner, batch_info, peak_kv_data_bytes, rank, world_size)
+        _write_memory_and_graph_metrics(
+            args, runner, batch_info, peak_kv_data_bytes, rank, world_size,
+            capture_counts_before=capture_counts_before,
+        )
 
         if observer is not None:
             payload = observer.finish(model_config, {
@@ -783,11 +789,24 @@ def resolve_log_file(args) -> str:
     return args.log_file
 
 
-def _write_memory_and_graph_metrics(args, runner, batch_info, kv_bytes, rank, world_size):
+def _flashinfer_capture_counts(runner):
+    graph = getattr(runner, "flashinfer_graph_runner", None)
+    return {
+        "prefill": getattr(graph, "capture_count", 0),
+        "decode": getattr(graph, "decode_capture_count", 0),
+        "gemma_decode": getattr(graph, "gemma_capture_count", 0),
+        "invalidations": getattr(graph, "invalidation_count", 0),
+    }
+
+
+def _write_memory_and_graph_metrics(
+    args, runner, batch_info, kv_bytes, rank, world_size, *, capture_counts_before,
+):
     """Allocator peaks include model loading, warmup, capture and generation."""
     graph = getattr(runner, "graph_runner", None)
     graph_cache = getattr(graph, "past_key_values", None)
     flashinfer_graph = getattr(runner, "flashinfer_graph_runner", None)
+    capture_counts_after = _flashinfer_capture_counts(runner)
     local = {
         "rank": rank,
         "kv_data_bytes": kv_bytes,
@@ -796,6 +815,11 @@ def _write_memory_and_graph_metrics(args, runner, batch_info, kv_bytes, rank, wo
         "peak_reserved_bytes": torch.cuda.max_memory_reserved(),
         "generic_graph_replays": getattr(graph, "replay_count", 0),
         "flashinfer_graph": flashinfer_graph.stats() if flashinfer_graph is not None else {},
+        "flashinfer_graph_before_generation": capture_counts_before,
+        "flashinfer_graph_during_generation": {
+            key: count - capture_counts_before[key]
+            for key, count in capture_counts_after.items()
+        },
     }
     ranks = [None] * world_size
     if torch.distributed.is_initialized() and world_size > 1:

@@ -72,6 +72,11 @@ batch size (bounded by `max-num-seqs`). Temporary generation settings, RNG state
 and LLaDA2 KV data are restored after warmup. Every distributed rank finishes
 startup before the HTTP application becomes available.
 
+Ranks exchange startup outcomes before becoming ready. If any rank reports a
+warmup failure, all ranks enter cleanup and report the failure; the CLI fallback
+does not send a second shutdown command. If that exchange itself fails, the
+launcher stops the remaining workers without another command collective.
+
 This warms the exercised kernel variants; it does not promise that every future
 batch/length combination will avoid JIT compilation. New shapes, GPU
 architectures, and FP8 scales may require additional variants. The pinned
@@ -135,6 +140,9 @@ pip install -e .
 The deployment target also accepts `bash` or an explicit executable after the
 image name. Its entrypoint uses `exec`, preserving signals and argument quoting.
 HTTP shutdown closes the distributed workers and CUDA Graph resources before
-the serving process exits; the CLI retains an idempotent cleanup fallback.
+the serving process exits. It first waits for any offloaded inference thread to
+finish, even if its asyncio waiter was cancelled. Request release and executor
+cleanup share the same execution lock; the CLI retains an idempotent cleanup
+fallback.
 
 Validation results are recorded in [Docker deployment experiments](../experiments/docker-deployment.md).

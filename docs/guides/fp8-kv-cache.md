@@ -122,6 +122,14 @@ CUDA 测试使用独立 PyTorch 编码和 attention 参考，默认 `rtol=1e-2, 
 - 每 rank 持久 KV 数据字节数、Graph 输入 KV 字节数。
 - PyTorch allocated/reserved 峰值，包含模型加载、warmup 和 capture。
 - 实际生成阶段的 TPS、NFE、token 数和 Graph replay 次数（排除 warmup replay）。
+- FlashInfer 在计时前的 capture/invalidation 计数，以及计时期间的增量：
+  `flashinfer_graph_before_generation` 和 `flashinfer_graph_during_generation`，
+  均包含 `prefill`、`decode`、`gemma_decode`、`invalidations`。
+
+LLaDA2 FlashInfer Graph 预热前按 `max(batch_size, mini_batch_size)` 分配持久 KV，
+保证 mini-batch 预热和正式 batch 使用相同缓存地址。性能验收除检查每个 rank
+确实发生生成 replay 外，还要求 FlashInfer 计时期间没有新增 capture 或缓存失效；
+缺少上述计数的旧测量文件也不能通过该检查。
 
 完整验收脚本：
 

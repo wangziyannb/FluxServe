@@ -176,6 +176,7 @@ def test_http_shutdown_stops_distributed_workers_before_returning(monkeypatch):
     executor = module.DistributedGenerationExecutor(base, DistributedContext(world_size=4))
     engine = AsyncLLM.__new__(AsyncLLM)
     engine.executor = executor
+    engine._execution_lock = asyncio.Lock()
     engine._task = None
     engine._new_request_event = asyncio.Event()
     app = create_app(engine)

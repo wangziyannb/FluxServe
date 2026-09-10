@@ -67,9 +67,16 @@ class AsyncLLM:
         self._new_request_event = asyncio.Event()
         self._task: asyncio.Task | None = None
         self._closed = False
+        self._execution_lock = asyncio.Lock()
 
     async def _execute(self, method, *args):
         """Run synchronous CUDA/NCCL coroutine bodies away from the HTTP loop."""
+        # Inference, request release and shutdown share CUDA/NCCL state. Keep
+        # ownership until the actual worker has stopped, even after cancellation.
+        async with self._execution_lock:
+            return await self._execute_locked(method, *args)
+
+    async def _execute_locked(self, method, *args):
         if not getattr(self.executor, "offload_execution", False):
             result = method(*args)
             return await result if inspect.isawaitable(result) else result
@@ -80,9 +87,26 @@ class AsyncLLM:
                 return asyncio.run(result)
             return result
 
-        return await asyncio.to_thread(run)
+        execution = asyncio.create_task(asyncio.to_thread(run))
+        try:
+            return await asyncio.shield(execution)
+        except asyncio.CancelledError:
+            # Cancelling to_thread's waiter does not stop its thread. Repeated
+            # cancellation must not release the lock while that thread runs.
+            while not execution.done():
+                try:
+                    await asyncio.shield(execution)
+                except asyncio.CancelledError:
+                    continue
+                except Exception:
+                    break
+            if not execution.cancelled():
+                execution.exception()  # Retrieve failures of a cancelled caller.
+            raise
 
     async def start(self) -> None:
+        if self._closed:
+            raise RuntimeError("Engine is shutting down")
         if self._task is None:
             self._task = asyncio.create_task(self._run_loop())
 
@@ -334,8 +358,8 @@ class AsyncLLM:
 
     async def _release_executor_requests(self, request_ids) -> None:
         release = getattr(self.executor, "release_requests", None)
-        if release is not None and request_ids:
-            await release(request_ids)
+        if release is not None and request_ids and not self._closed:
+            await self._execute(release, request_ids)
 
     async def _fail_all_active(self, error: str) -> None:
         await self._fail_states(list(self._states.values()), error)

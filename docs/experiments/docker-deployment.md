@@ -128,3 +128,42 @@ FlashInfer 的首次只读运行发现 DLPack 扩展默认写入不可写的用�
 本次只验证部署及短请求运行。共享 GPU 上的启动时间不能用来评估性能；没有运行完整
 HumanEval 质量比较、五次性能实验或完整模型 CUDA Graph 验收。
 `100a` 和 `120` 架构仅完成交叉编译，未获得对应 GPU 的实机验证。
+
+## Review 后的退出与 Graph 测量修复
+
+2026-09-10，基于 `6d5e183` 修复三处 review 问题：
+
+- 关闭服务时等待 `asyncio.to_thread` 的实际推理线程结束，再清理 worker 和 Graph；
+  重复取消等待任务也不能提前释放执行锁。请求释放使用同一执行锁。
+- 用所有 rank 的启动结果交换替代仅成功路径的 barrier。rank 0、其他 rank 或多个
+  rank 预热失败时，各 rank 协调清理并报告相同错误，CLI 不再追加正常 shutdown 广播。
+- FlashInfer Graph 预热前按正式 batch 容量分配 KV，避免 batch 8 / mini-batch 4
+  在计时阶段重新分配和 capture；验收拒绝任何 rank 在计时期间新增 capture/invalidation。
+
+CPU 回归结果：**109 passed，2 skipped**（43.55 秒），日志保存在
+`/data/fluxserve-review-fixes-20260910/cpu-tests.log`。
+
+```bash
+CUDA_VISIBLE_DEVICES='' PYTHONPATH=python:flux-kernel/python \
+  /tmp/fluxserve-pytest-venv/bin/python -m pytest -q \
+  test/runtime/test_offloaded_shutdown.py \
+  test/runtime/test_distributed_startup.py \
+  test/runtime/test_benchmark_graph_warmup.py \
+  test/runtime/test_deployment.py \
+  test/runtime/test_engine_executor.py \
+  test/runtime/test_distributed_launch.py \
+  test/runtime/test_scheduler_defaults.py \
+  test/runtime/test_model_runner_cuda_graph_routing.py \
+  test/runtime/test_diffusion_gemma_benchmark.py \
+  test/runtime/test_kv_quantization.py \
+  test/runtime/test_block_diffusion_offline.py
+```
+
+新增测试使用真实线程及双进程 Gloo，覆盖推理成功/异常、重复取消、启动成功及
+任意 rank 预热失败、清理 collective 一致性。缓存测试在 CPU 上调用实际 warmup、
+generate、分配和失效路径，覆盖 BF16/FP8、batch 8→2→8 的地址复用，并联动指标输出
+与验收拒绝逻辑；GPU forward/capture 在该测试中用地址索引记录替代。
+
+这些回归不代表新增的 CUDA/NCCL 或完整模型验证。本轮未重建 Docker 镜像，也未重跑
+GPU 服务、质量或性能实验。上文 rootfs 和镜像归档是修复前的产物，部署本轮修复需从
+新提交重新构建镜像；此前的 GPU 运行结果不能作为本轮修复的实机验收。

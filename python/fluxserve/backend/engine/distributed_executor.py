@@ -59,14 +59,46 @@ class DistributedGenerationExecutor:
         self.base_executor = base_executor
         self.context = context
         self._workers_stopped = False
+        self._startup_aborted = False
 
     async def startup(self) -> dict[str, int | float]:
-        if self.context.is_distributed:
+        if not self.context.is_distributed:
+            startup = getattr(self.base_executor, "startup", None)
+            return await startup() if startup is not None else {}
+        try:
             _broadcast_command({"kind": _CMD_STARTUP})
-        startup = getattr(self.base_executor, "startup", None)
-        result = await startup() if startup is not None else {}
-        if self.context.is_distributed:
-            dist.barrier()
+        except BaseException:
+            self._startup_aborted = True
+            raise
+        return await self._startup_all_ranks()
+
+    async def _startup_all_ranks(self) -> dict[str, int | float]:
+        """Exchange outcomes on every rank, including a failed warmup rank."""
+        result = {}
+        error = None
+        try:
+            try:
+                startup = getattr(self.base_executor, "startup", None)
+                result = await startup() if startup is not None else {}
+            except Exception as exc:
+                error = f"rank {self.context.rank}: {type(exc).__name__}: {exc}"
+            errors = [None] * self.context.world_size
+            dist.all_gather_object(errors, error)
+        except BaseException:
+            # Communication/cancellation failures have no shared protocol
+            # boundary. Let the launcher stop peers; do not send a shutdown
+            # broadcast or enter Graph cleanup collectives on a broken group.
+            self._startup_aborted = True
+            raise
+        failures = [error for error in errors if error is not None]
+        if failures:
+            self._workers_stopped = True
+            # All ranks agreed on failure and enter the same cleanup sequence.
+            # The CLI's finally block must not send another command afterward.
+            shutdown = getattr(self.base_executor, "shutdown", None)
+            if shutdown is not None:
+                await shutdown()
+            raise RuntimeError("Distributed startup failed: " + "; ".join(failures))
         return result
 
     def cuda_graph_stats(self) -> dict[str, int | float]:
@@ -116,10 +148,7 @@ class DistributedGenerationExecutor:
                 logger.info("distributed worker rank=%s received shutdown", self.context.rank)
                 return
             if kind == _CMD_STARTUP:
-                startup = getattr(self.base_executor, "startup", None)
-                if startup is not None:
-                    await startup()
-                dist.barrier()
+                await self._startup_all_ranks()
                 continue
             if kind == _CMD_FORWARD_PLAN:
                 op = _forward_plan_from_payload(command["plan"])
@@ -140,7 +169,7 @@ class DistributedGenerationExecutor:
 
     async def shutdown_workers(self) -> None:
         # Both the HTTP shutdown event and the CLI's finally block call this.
-        if self._workers_stopped:
+        if self._workers_stopped or self._startup_aborted:
             return
         self._workers_stopped = True
         if self.context.is_distributed and self.context.is_rank0 and dist.is_initialized():

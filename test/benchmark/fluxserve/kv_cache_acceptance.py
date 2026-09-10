@@ -141,6 +141,27 @@ def execute(command, path, env, allowed_groups=()):
     return {"peak_device_used_bytes": peaks}
 
 
+def validate_graph_measurement(metrics, *, label, backend):
+    for rank in metrics["ranks"]:
+        replays = rank["generic_graph_replays"] + rank["flashinfer_graph"].get(
+            "decode_replay_count", 0
+        )
+        if replays <= 0:
+            raise RuntimeError(
+                f"No generation graph replay recorded for {label} rank {rank['rank']}"
+            )
+        if backend == "flashinfer":
+            during = rank.get("flashinfer_graph_during_generation", {})
+            required = {"prefill", "decode", "gemma_decode", "invalidations"}
+            if not required.issubset(during):
+                raise RuntimeError(f"Missing timed Graph capture counters for {label}")
+            if any(during[key] != 0 for key in required):
+                raise RuntimeError(
+                    f"Graph capture/invalidation occurred during timed generation "
+                    f"for {label} rank {rank['rank']}: {during}"
+                )
+
+
 def calibrate(args):
     require_idle(args.gpus, args.output)
     command = runtime_command(
@@ -252,14 +273,7 @@ def performance(args):
                     metrics = json.loads((directory / "run_metrics.json").read_text())
                     metrics.update(telemetry)
                     if graph:
-                        for rank in metrics["ranks"]:
-                            replays = rank["generic_graph_replays"] + rank[
-                                "flashinfer_graph"
-                            ].get("decode_replay_count", 0)
-                            if replays <= 0:
-                                raise RuntimeError(
-                                    f"No generation graph replay recorded for {label} rank {rank['rank']}"
-                                )
+                        validate_graph_measurement(metrics, label=label, backend=backend)
                     rows = groups.setdefault(label, {"status": "running", "runs": []})[
                         "runs"
                     ]
