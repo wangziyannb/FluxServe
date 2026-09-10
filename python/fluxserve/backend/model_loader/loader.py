@@ -102,6 +102,10 @@ class DefaultModelLoader:
             mappings,
         )
 
+        from fluxserve.backend.layers.kv_quantization import extract_checkpoint_kv_scales
+
+        model.checkpoint_kv_scales = extract_checkpoint_kv_scales(state_dict)
+
         if model.quant_config is not None:
             self._update_state_dict_for_fusemoe_quant(
                 model,

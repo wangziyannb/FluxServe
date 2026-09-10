@@ -6,6 +6,10 @@
 
 ### Option 1: Run Docker Environment (Recommended)
 
+The default image includes the installed runtime and precompiled native kernels.
+For persistent caches, FP8 KV calibration, startup warmup, and read-only deployment,
+see [Docker deployment](deployment.md).
+
 ```bash
 docker build -f docker/Dockerfile.flux-cu129 -t flux:cu129 .
 
@@ -21,7 +25,9 @@ docker run -itd \
   /bin/bash
 ```
 
-Inside the container:
+The image is ready to run; skip the installation steps below when using the
+default image. For source development, build with `--target dependencies` and
+perform these steps inside that development container:
 
 ```bash
 git clone https://github.com/FLX-OSS/FluxServe

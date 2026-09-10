@@ -1,4 +1,5 @@
 from types import SimpleNamespace
+from unittest.mock import Mock
 
 import torch
 
@@ -108,3 +109,64 @@ def test_cuda_graph_runner_skips_disabled_prefill_capture(monkeypatch):
 
     assert graph_runner.prefill_lengths == []
     assert graph_runner.cache_lengths == [128]
+
+
+def test_model_runner_releases_generic_cuda_graphs_before_distributed_teardown():
+    runner = ModelRunner.__new__(ModelRunner)
+    runner.tp_group = SimpleNamespace(device_group="tp-group")
+    graph_runner = Mock()
+    runner.graph_runner = graph_runner
+
+    runner.shutdown_cuda_graphs(log=False)
+
+    graph_runner.shutdown.assert_called_once_with("tp-group", log=False)
+    assert runner.graph_runner is None
+
+
+def test_cuda_graph_runner_shutdown_releases_graph_state(monkeypatch):
+    events = []
+    device_module = SimpleNamespace(
+        synchronize=lambda: events.append("synchronize"),
+        empty_cache=lambda: events.append("empty_cache"),
+    )
+    runner = CudaGraphRunner.__new__(CudaGraphRunner)
+    runner.device_module = device_module
+    runner.graphs = {"graph": object()}
+    runner.output_buffers = {"output": object()}
+    runner.input_ids = object()
+    runner.position_ids = object()
+    runner.past_key_values = object()
+    runner.attention_mask = object()
+    runner.stream = object()
+
+    barrier = Mock(side_effect=lambda **kwargs: events.append(("barrier", kwargs)))
+    monkeypatch.setattr(torch.distributed, "is_available", lambda: True)
+    monkeypatch.setattr(torch.distributed, "is_initialized", lambda: True)
+    monkeypatch.setattr(torch.distributed, "barrier", barrier)
+    monkeypatch.setattr(cuda_graph_module.gc, "collect", lambda: events.append("gc"))
+    monkeypatch.setattr(
+        cuda_graph_module,
+        "set_graph_pool_id",
+        lambda value: events.append(("allocator_pool", value)),
+    )
+    cuda_graph_module.set_global_graph_memory_pool("pool")
+
+    runner.shutdown("tp-group", log=False)
+    runner.shutdown("tp-group", log=False)
+
+    assert events == [
+        "synchronize",
+        ("barrier", {"group": "tp-group"}),
+        ("allocator_pool", None),
+        "gc",
+        "empty_cache",
+        ("barrier", {"group": "tp-group"}),
+    ]
+    assert runner.graphs == {}
+    assert runner.output_buffers == {}
+    assert runner.input_ids is None
+    assert runner.position_ids is None
+    assert runner.past_key_values is None
+    assert runner.attention_mask is None
+    assert runner.stream is None
+    assert cuda_graph_module.get_global_graph_memory_pool() is None

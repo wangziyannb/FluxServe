@@ -58,12 +58,16 @@ class DistributedGenerationExecutor:
     def __init__(self, base_executor: GenerationExecutor, context: DistributedContext):
         self.base_executor = base_executor
         self.context = context
+        self._workers_stopped = False
 
     async def startup(self) -> dict[str, int | float]:
         if self.context.is_distributed:
             _broadcast_command({"kind": _CMD_STARTUP})
         startup = getattr(self.base_executor, "startup", None)
-        return await startup() if startup is not None else {}
+        result = await startup() if startup is not None else {}
+        if self.context.is_distributed:
+            dist.barrier()
+        return result
 
     def cuda_graph_stats(self) -> dict[str, int | float]:
         stats = getattr(self.base_executor, "cuda_graph_stats", None)
@@ -115,6 +119,7 @@ class DistributedGenerationExecutor:
                 startup = getattr(self.base_executor, "startup", None)
                 if startup is not None:
                     await startup()
+                dist.barrier()
                 continue
             if kind == _CMD_FORWARD_PLAN:
                 op = _forward_plan_from_payload(command["plan"])
@@ -134,6 +139,10 @@ class DistributedGenerationExecutor:
             await self.base_executor.execute_batch(requests)
 
     async def shutdown_workers(self) -> None:
+        # Both the HTTP shutdown event and the CLI's finally block call this.
+        if self._workers_stopped:
+            return
+        self._workers_stopped = True
         if self.context.is_distributed and self.context.is_rank0 and dist.is_initialized():
             _broadcast_command({"kind": _CMD_SHUTDOWN})
         shutdown = getattr(self.base_executor, "shutdown", None)

@@ -90,8 +90,19 @@ def build_parser() -> argparse.ArgumentParser:
         default="auto",
         help="Quantization format. Auto-detects ModelOpt static FP8 or NVFP4.",
     )
+    from fluxserve.backend.layers.kv_quantization import add_kv_cache_arguments
+    add_kv_cache_arguments(serve)
     serve.add_argument("--host", default="0.0.0.0")
     serve.add_argument("--port", type=int, default=8000)
+    warmup_options = serve.add_mutually_exclusive_group()
+    warmup_options.add_argument(
+        "--warmup-only", action="store_true",
+        help="Load the model, warm up kernels/graphs, then exit without opening HTTP.",
+    )
+    warmup_options.add_argument(
+        "--skip-startup-warmup", action="store_true",
+        help="Skip representative eager prefill/decode warmup (for development).",
+    )
     serve.add_argument(
         "--apply-template",
         action="store_true",
@@ -203,6 +214,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("env", help="Print environment and dependency information.")
     add_bench_subparser(sub)
     add_bench_offline_subparser(sub)
+    add_bench_offline_subparser(sub, command="calibrate_kv_cache")
     return parser
 
 
@@ -223,6 +235,12 @@ def _resolve_quant_config(model_config, quantization: str = "auto"):
     nested = metadata.get("quantization")
     quant = nested if isinstance(nested, dict) else metadata
     quant_algo = str(quant.get("quant_algo", "")).upper()
+    if quant_algo in ("", "NONE") and quantization == "auto" and any(
+        quant.get(key) for key in ("kv_cache_quant_algo", "kv_cache_scheme")
+    ):
+        from fluxserve.backend.layers.kv_quantization import checkpoint_kv_dtype
+        checkpoint_kv_dtype(metadata)
+        return None
     detected = {
         "FP8": "modelopt_fp8",
         "NVFP4": "modelopt_nvfp4",
@@ -310,6 +328,7 @@ def serve(args) -> None:
 
 
 def _serve_worker(args, *, init_method: str = "env://") -> None:
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     if args.process_name:
         set_process_title(args.process_name)
 
@@ -458,6 +477,8 @@ def _serve_worker(args, *, init_method: str = "env://") -> None:
             flashinfer_decode_batch_mode=args.flashinfer_decode_batch_mode,
             flashinfer_prefill_mode=args.flashinfer_prefill_mode,
             flashinfer_cache_mode=args.flashinfer_cache_mode,
+            kv_cache_dtype=args.kv_cache_dtype,
+            kv_cache_scales=args.kv_cache_scales,
             kv_cache_layout=args.kv_cache_layout,
             page_size=args.page_size,
             canvas_length=args.canvas_length,
@@ -485,8 +506,23 @@ def _serve_worker(args, *, init_method: str = "env://") -> None:
                 runner=runner, page_size=int(args.page_size or args.block_length),
                 utilization=server_args.gpu_memory_utilization,
                 safety_reserve=server_args.gpu_memory_safety_reserve)
-        base_executor = BlockDiffusionExecutor(runner=runner, tokenizer=tokenizer)
+        base_executor = BlockDiffusionExecutor(
+            runner=runner, tokenizer=tokenizer,
+            startup_warmup=not getattr(args, "skip_startup_warmup", False),
+        )
         executor = DistributedGenerationExecutor(base_executor, context)
+        if getattr(args, "warmup_only", False):
+            if context.is_rank0:
+                async def warmup_and_shutdown():
+                    try:
+                        await executor.startup()
+                        logger.info("Startup warmup complete; exiting (--warmup-only).")
+                    finally:
+                        await executor.shutdown_workers()
+                asyncio.run(warmup_and_shutdown())
+            else:
+                asyncio.run(executor.run_worker_loop())
+            return
         if context.is_rank0:
             scheduler = None
             if args.scheduler_policy == "paged":
@@ -530,6 +566,9 @@ def main() -> None:
         env_main()
     elif args.command == "bench":
         args.dispatch_function(args)
+    elif args.command == "calibrate_kv_cache":
+        from fluxserve.bench_offline import calibrate_kv_cache
+        calibrate_kv_cache(args)
     elif args.command == "bench_offline":
         bench_offline(args)
 

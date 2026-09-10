@@ -187,7 +187,7 @@ def profile_paged_kv_pages(*, runner, page_size: int, utilization: float, safety
     from fluxserve.backend.layers.dp_attention import get_attention_tp_size
     local_heads = max(1, int(config.num_key_value_heads) // get_attention_tp_size())
     head_dim = int(config.hidden_size) // int(config.num_attention_heads)
-    dtype = torch.bfloat16
+    dtype = getattr(runner, "kv_cache_dtype", torch.bfloat16)
     bytes_per_page = 2 * layers * local_heads * head_dim * int(page_size) * torch.tensor([], dtype=dtype).element_size()
     total = int(torch.cuda.get_device_properties(runner.device).total_memory)
     available = int(get_available_gpu_memory(runner.device, runner.gpu_id) * (1024**3))

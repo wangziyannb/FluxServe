@@ -1,6 +1,16 @@
 # Skip pre-compiled kernel .so/.o files so they are rebuilt inside the container
 **/*.so
 **/*.o
+**/objs
+**/build
+**/dist
+**/.pytest_cache
+**/.venv
+**/*.egg-info
+data
+outputs
+results
+logs
 
 # Common development artifacts
 **/__pycache__

@@ -23,6 +23,8 @@ import logging
 import torch
 import torch.distributed as dist
 
+from fluxserve.backend.layers.kv_quantization import cache_bytes
+
 from fluxserve.backend.configs.model_config import ModelConfig
 from fluxserve.backend.execution.forward_batch_info import (
     ForwardBatch,
@@ -76,6 +78,10 @@ class BlockDiffusionRunner(ModelRunner):
 
     def _use_paged_kv_cache(self) -> bool:
         return self.runner_config.kv_cache_layout == "paged"
+
+    def prepare_online_warmup(self):
+        from fluxserve.backend.execution.warmup import warmup_online_runner
+        return warmup_online_runner(self)
 
     def preprocess_inputs(self, prompts):
         prompt_length = prompts.shape[1]
@@ -146,7 +152,7 @@ class BlockDiffusionRunner(ModelRunner):
                 max_length=self.max_length,
                 head_dim=head_dim,
                 page_size=int(self.runner_config.page_size),
-                dtype=torch.bfloat16,
+                dtype=getattr(self, "kv_cache_dtype", torch.bfloat16),
                 device=self.device,
             )
         return torch.zeros(
@@ -158,7 +164,7 @@ class BlockDiffusionRunner(ModelRunner):
                 self.max_length,
                 head_dim,
             ),
-            dtype=torch.bfloat16,
+            dtype=getattr(self, "kv_cache_dtype", torch.bfloat16),
             device=self.device,
         )
 
@@ -221,7 +227,7 @@ class BlockDiffusionRunner(ModelRunner):
         self.past_key_values[:, :, global_idx, :, sample_len:] = 0
 
     @torch.no_grad()
-    def generate(self, prompts):
+    def generate(self, prompts, *, kv_cache=None):
         batch_size = prompts.shape[0]
         mini_batch_size = self.runner_config.mini_batch_size
         total_length, new_gen_length, attn_mask_num_blocks = self.preprocess_inputs(
@@ -256,7 +262,9 @@ class BlockDiffusionRunner(ModelRunner):
             decoding_start = decoding_start.clip(0, self.prefilling_limit)
         prefilling_lengths = decoding_start.clone()
 
-        self.past_key_values = self.allocate_kv_cache(batch_size)
+        self.past_key_values = (
+            self.allocate_kv_cache(batch_size) if kv_cache is None else kv_cache
+        )
         num_layers = self.model.model.config.num_hidden_layers
 
         self._prefill_batches(
@@ -387,9 +395,9 @@ class BlockDiffusionRunner(ModelRunner):
                         length=current_cache_length,
                     )
                 else:
-                    decoding_past_key_values = self.past_key_values[
+                    decoding_past_key_values = cache_bytes(self.past_key_values)[
                         :, :, seq_ids, :, :current_cache_length
-                    ]
+                    ].view(self.past_key_values.dtype)
                 decoding_pos_ids = torch.arange(
                     self.block_length, device=self.device, dtype=torch.long
                 ).unsqueeze(0).repeat(seq_ids.shape[0], 1)
@@ -476,10 +484,10 @@ class BlockDiffusionRunner(ModelRunner):
         block_positions = decoding_start[finished_seq_ids].unsqueeze(1) + torch.arange(
             self.block_length, device=self.device
         )
-        kv_slice = decoding_kv.permute(2, 4, 0, 1, 3, 5)[
+        kv_slice = cache_bytes(decoding_kv).permute(2, 4, 0, 1, 3, 5)[
             block_finished,
             current_cache_length - self.block_length : current_cache_length,
         ]
-        self.past_key_values[
+        cache_bytes(self.past_key_values)[
             :, :, finished_seq_ids.unsqueeze(1), :, block_positions.long()
         ] = kv_slice

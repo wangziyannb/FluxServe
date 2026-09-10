@@ -46,6 +46,7 @@ class _DecodeGraphEntry:
     append_positions: torch.Tensor
     wrapper: object
     hidden_states: torch.Tensor
+    fp8_max_kv_len: int | None = None
 
 
 @dataclass
@@ -345,7 +346,8 @@ class FlashInferCudaGraphRunner:
         if bucket is None:
             raise RuntimeError("Full-prefill CUDA graph received unsupported length")
         cache = runner.past_key_values
-        key = (bucket, cache.data.data_ptr(), input_ids.dtype)
+        key = (bucket, cache.data.data_ptr(), input_ids.dtype, cache.data.dtype,
+               getattr(getattr(runner, "kv_quantization", None), "signature", None))
         entry = self._graphs.get(key)
         if entry is None:
             entry = self._capture_llada2_prefill(runner, bucket, key)
@@ -375,13 +377,15 @@ class FlashInferCudaGraphRunner:
         num_kv_heads: int,
         head_dim: int,
         sm_scale: float,
+        k_scale: float | None = None,
+        v_scale: float | None = None,
     ) -> torch.Tensor:
         self._require_family("llada2")
         del num_q_heads, num_kv_heads, head_dim, sm_scale
         if self._active_entry is None:
             raise RuntimeError("FlashInfer full-prefill graph is not active")
         return self._active_entry.wrapper.run(
-            q, paged_kv_cache, enable_pdl=False
+            q, paged_kv_cache, enable_pdl=False, k_scale=k_scale, v_scale=v_scale
         )
 
     def decode_graph_bucket(
@@ -469,7 +473,8 @@ class FlashInferCudaGraphRunner:
         if batch_sizes is None:
             batch_sizes = self.decode_capture_batch_sizes
         for batch_size in sorted(set(map(int, batch_sizes)), reverse=True):
-            key = (batch_size, cache.data.data_ptr(), torch.long)
+            key = (batch_size, cache.data.data_ptr(), torch.long, cache.data.dtype,
+                   getattr(getattr(runner, "kv_quantization", None), "signature", None))
             if key not in self._decode_graphs:
                 self._capture_llada2_decode(runner, batch_size, key)
         self.capture_time_s += time.perf_counter() - started
@@ -682,7 +687,8 @@ class FlashInferCudaGraphRunner:
             )
         batch_size = graph_bucket
         cache = runner.past_key_values
-        key = (batch_size, cache.data.data_ptr(), input_ids.dtype)
+        key = (batch_size, cache.data.data_ptr(), input_ids.dtype, cache.data.dtype,
+               getattr(getattr(runner, "kv_quantization", None), "signature", None))
         entry = self._decode_graphs.get(key)
         if entry is None:
             entry = self._capture_llada2_decode(runner, batch_size, key)
@@ -754,10 +760,20 @@ class FlashInferCudaGraphRunner:
                 "Dynamic decode metadata exceeds captured page capacity: "
                 f"actual={actual_indices.numel()}, capacity={entry.kv_indices.numel()}"
             )
-        entry.kv_indptr.copy_(padded_kv_indptr)
-        entry.kv_indices.fill_(int(cache.dummy_page_id))
-        entry.kv_indices[: actual_indices.numel()].copy_(actual_indices)
-        entry.last_page_len.copy_(padded_last_page_len)
+        if entry.fp8_max_kv_len is not None:
+            from flux_kernel.ops.kv_cache import update_fp8_decode_metadata
+            update_fp8_decode_metadata(
+                padded_kv_indptr, actual_indices, padded_last_page_len, padded_q_offsets,
+                entry.kv_indices, entry.wrapper._custom_mask_buf,
+                max_kv_len=entry.fp8_max_kv_len, q_len=int(input_ids.shape[1]),
+                page_size=int(cache.page_size), block_length=int(runner.block_length),
+                dummy_page=int(cache.dummy_page_id),
+            )
+        else:
+            entry.kv_indptr.copy_(padded_kv_indptr)
+            entry.kv_indices.fill_(int(cache.dummy_page_id))
+            entry.kv_indices[: actual_indices.numel()].copy_(actual_indices)
+            entry.last_page_len.copy_(padded_last_page_len)
         entry.slot_mapping.copy_(padded_slots.reshape(-1))
         entry.q_offsets.copy_(padded_q_offsets)
         entry.kv_offsets.zero_()
@@ -769,11 +785,13 @@ class FlashInferCudaGraphRunner:
         self._decode_replay_counts_by_bs[batch_size] += 1
         return entry.hidden_states[:actual_batch_size]
 
-    def run_decode_attention(self, q: torch.Tensor, paged_kv_cache) -> torch.Tensor:
+    def run_decode_attention(self, q: torch.Tensor, paged_kv_cache, *, k_scale=None, v_scale=None) -> torch.Tensor:
         self._require_family("llada2")
         if not isinstance(self._active_entry, _DecodeGraphEntry):
             raise RuntimeError("FlashInfer full-decode graph is not active")
-        output = self._active_entry.wrapper.run(q, paged_kv_cache)
+        output = self._active_entry.wrapper.run(
+            q, paged_kv_cache, k_scale=k_scale, v_scale=v_scale, enable_pdl=False
+        )
         bsz = int(self._active_entry.input_ids.shape[0])
         q_len = int(self._active_entry.input_ids.shape[1])
         return output.view(bsz, q_len, q.shape[1], q.shape[2]).transpose(1, 2).contiguous()
@@ -818,7 +836,8 @@ class FlashInferCudaGraphRunner:
         kv_offsets = torch.zeros(
             batch_size, dtype=torch.int32, device=self.device
         )
-        native_graph = getattr(
+        fp8 = cache.data.dtype == torch.float8_e4m3fn
+        native_graph = not fp8 and getattr(
             runner.runner_config, "decode_cuda_graph_mode", "decomposed"
         ) == "padded"
         wrapper_kwargs = dict(
@@ -829,6 +848,10 @@ class FlashInferCudaGraphRunner:
             paged_kv_last_page_len_buf=last_page_len,
             backend="fa2",
         )
+        if fp8:
+            # FA2 plans the maximum lengths once; replay updates fixed page rows
+            # and a packed mask instead of changing the captured CSR geometry.
+            wrapper_kwargs = dict(kv_layout="NHD", backend="fa2")
         if native_graph:
             wrapper_kwargs.update(
                 q_offsets_buf=q_offsets,
@@ -863,6 +886,12 @@ class FlashInferCudaGraphRunner:
             ).unsqueeze(0)
         ).reshape(-1)
         plan_kwargs = {}
+        if fp8:
+            from fluxserve.backend.layers.attention.fp8_flashinfer import block_causal_mask
+            plan_kwargs["custom_mask"] = block_causal_mask(
+                (block_length,) * batch_size, (max_kv_len,) * batch_size,
+                (q_offset,) * batch_size, (0,) * batch_size, block_length, self.device,
+            )
         if native_graph:
             plan_kwargs.update(q_offsets=q_offsets, kv_offsets=kv_offsets)
         wrapper.plan(
@@ -929,7 +958,17 @@ class FlashInferCudaGraphRunner:
             torch.cuda.CUDAGraph(), input_ids, position_ids, kv_indptr, kv_indices,
             last_page_len, slot_mapping, q_offsets, kv_offsets,
             append_batch_indices, append_positions, wrapper, placeholder,
+            fp8_max_kv_len=max_kv_len if fp8 else None,
         )
+        if fp8:
+            # Compile metadata kernels before graph capture, using dummy inputs.
+            from flux_kernel.ops.kv_cache import update_fp8_decode_metadata
+            update_fp8_decode_metadata(
+                kv_indptr, kv_indices.clone(), last_page_len, q_offsets,
+                kv_indices, wrapper._custom_mask_buf, max_kv_len=max_kv_len,
+                q_len=block_length, page_size=page_size, block_length=block_length,
+                dummy_page=int(cache.dummy_page_id),
+            )
         self._active_entry = entry
         try:
             for _ in range(2):

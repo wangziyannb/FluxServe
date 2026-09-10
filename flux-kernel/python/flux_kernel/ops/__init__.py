@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+from flux_kernel.ops.kv_cache import quantize_scatter_kv, update_fp8_decode_metadata
 from flux_kernel.ops.activation import silu_and_mul
 from flux_kernel.ops.moe import moe_align_block_size, moe_fused_gate
 from flux_kernel.ops.quantization import (
@@ -29,6 +30,8 @@ from flux_kernel.ops.rmsnorm import qk_rmsnorm, rmsnorm
 from flux_kernel.ops.rope import apply_rope_with_cos_sin_cache_inplace
 
 __all__ = [
+    "quantize_scatter_kv",
+    "update_fp8_decode_metadata",
     "rmsnorm",
     "qk_rmsnorm",
     "silu_and_mul",

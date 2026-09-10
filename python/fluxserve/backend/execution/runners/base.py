@@ -150,11 +150,38 @@ class ModelRunner:
         )
 
     def init_model(self):
+        from fluxserve.backend.layers.kv_quantization import (
+            KVQuantizationConfig,
+            configure_kv_attention,
+            resolve_kv_dtype,
+        )
+
+        resolve_kv_dtype(self.model_config, self.runner_config.kv_cache_dtype)
         quant_config = getattr(self.model_config, "quant_config", None)
         self.model = get_model(
             model_config=self.model_config,
             device=self.device,
             quant_config=quant_config,
+        )
+
+        self.kv_quantization = KVQuantizationConfig.load(
+            self.model_config,
+            self.runner_config.kv_cache_dtype,
+            self.runner_config.kv_cache_scales,
+            getattr(self.model, "checkpoint_kv_scales", None),
+        )
+        self.kv_cache_dtype = self.kv_quantization.torch_dtype
+        configure_kv_attention(self.model, self.kv_quantization)
+        logger.info(
+            "KV cache dtype=%s scales=%s attention=%s",
+            self.kv_quantization.dtype,
+            self.kv_quantization.source,
+            (
+                "flashinfer-fa2-fp8"
+                if self.kv_quantization.dtype == "fp8_e4m3"
+                and self.runner_config.attention_backend == "flashinfer"
+                else self.runner_config.attention_backend
+            ),
         )
 
     def init_decoder(self):
@@ -194,6 +221,13 @@ class ModelRunner:
             self.graph_mem_usage,
             after_mem,
         )
+
+    def shutdown_cuda_graphs(self, *, log: bool = True) -> None:
+        graph_runner = getattr(self, "graph_runner", None)
+        if graph_runner is None:
+            return
+        graph_runner.shutdown(self.tp_group.device_group, log=log)
+        self.graph_runner = None
 
     def forward_normal(
         self,

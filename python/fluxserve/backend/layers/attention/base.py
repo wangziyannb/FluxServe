@@ -55,7 +55,9 @@ def _load_flex_attention():
     if torch.cuda.is_available():
         flex_attention = torch.compile(
             flex_attention,
-            mode="max-autotune",
+            # FluxServe owns graph capture/replay. Inductor's nested CUDA
+            # graphs cannot replay while an outer model graph is capturing.
+            mode="max-autotune-no-cudagraphs",
             fullgraph=True,
         )
     _FLEX_ATTENTION = flex_attention

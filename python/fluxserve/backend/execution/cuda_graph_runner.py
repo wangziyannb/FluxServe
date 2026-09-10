@@ -167,11 +167,13 @@ def set_global_graph_memory_pool(val):
 class CudaGraphRunner:
     def __init__(self, model_runner: ModelRunner):
         self.model_runner = model_runner
+        self.kv_signature = getattr(getattr(model_runner, "kv_quantization", None), "signature", None)
         self.capture_bs, self.compile_bs = model_runner.supported_batch_sizes, model_runner.supported_batch_sizes
         self.device = model_runner.device
         self.device_module = torch.get_device_module(self.device)
         self.graphs = {}
         self.output_buffers = {}
+        self.replay_count = 0
         self.disable_padding = False
 
         self.max_bs = max(self.capture_bs)
@@ -203,7 +205,7 @@ class CudaGraphRunner:
             num_kv_heads = self.model_runner.model.config.num_key_value_heads
             num_heads = self.model_runner.model.config.num_attention_heads
             head_dim = self.model_runner.model.config.hidden_size // num_heads
-            self.past_key_values = torch.zeros((num_layers, 2, self.max_bs, max(1, num_kv_heads//self.tp_size), self.model_runner.max_length, head_dim), dtype=torch.bfloat16)
+            self.past_key_values = torch.zeros((num_layers, 2, self.max_bs, max(1, num_kv_heads//self.tp_size), self.model_runner.max_length, head_dim), dtype=getattr(self.model_runner, "kv_cache_dtype", torch.bfloat16))
             self.attention_mask = torch.ones((self.max_bs, self.model_runner.max_length, self.model_runner.max_length), dtype=torch.bool)
             self.attention_mask[0, 0, 0] = False # make sure self.attention_mask is not all False or all True to avoid potential op select problem
         # Capture
@@ -223,6 +225,36 @@ class CudaGraphRunner:
 
     def _create_device_graph(self):
         return torch.cuda.CUDAGraph()
+
+    def shutdown(self, process_group=None, *, log: bool = True) -> None:
+        """Release captured collectives before their process group is destroyed."""
+        import torch.distributed as dist
+
+        if getattr(self, "_shutdown", False):
+            return
+
+        self.device_module.synchronize()
+        if dist.is_available() and dist.is_initialized():
+            dist.barrier(group=process_group)
+
+        graph_count = len(self.graphs)
+        self.graphs.clear()
+        self.output_buffers.clear()
+        self.input_ids = None
+        self.position_ids = None
+        self.past_key_values = None
+        self.attention_mask = None
+        self.stream = None
+        set_graph_pool_id(None)
+        set_global_graph_memory_pool(None)
+        gc.collect()
+        self.device_module.empty_cache()
+
+        if dist.is_available() and dist.is_initialized():
+            dist.barrier(group=process_group)
+        self._shutdown = True
+        if log:
+            logger.info("Released %d generic CUDA graphs", graph_count)
     
     def capture(self) -> None:
         # Trigger CUDA graph capture for specific shapes.
@@ -267,8 +299,8 @@ class CudaGraphRunner:
                             graph,
                             output_buffers,
                         ) = self.capture_one_batch_size(bs, forward, True, length, cache_length)
-                        self.graphs[(bs, True, length, cache_length)] = graph
-                        self.output_buffers[(bs, True, length, cache_length)] = output_buffers
+                        self.graphs[self._graph_key(bs, True, length, cache_length)] = graph
+                        self.output_buffers[self._graph_key(bs, True, length, cache_length)] = output_buffers
 
                     # Save gemlite cache after each capture
                     save_gemlite_cache()
@@ -295,8 +327,8 @@ class CudaGraphRunner:
                                 graph,
                                 output_buffers,
                             ) = self.capture_one_batch_size(bs, forward, True, length, cache_length, use_mask = True)
-                            self.graphs[(bs, True, length, cache_length)] = graph
-                            self.output_buffers[(bs, True, length, cache_length)] = output_buffers
+                            self.graphs[self._graph_key(bs, True, length, cache_length)] = graph
+                            self.output_buffers[self._graph_key(bs, True, length, cache_length)] = output_buffers
 
                         # Save gemlite cache after each capture
                         save_gemlite_cache()
@@ -328,8 +360,8 @@ class CudaGraphRunner:
                         graph,
                         output_buffers,
                     ) = self.capture_one_batch_size(bs, forward, False, length, use_mask=True)
-                    self.graphs[(bs, False, length, 0)] = graph
-                    self.output_buffers[(bs, False, length, 0)] = output_buffers
+                    self.graphs[self._graph_key(bs, False, length, 0)] = graph
+                    self.output_buffers[self._graph_key(bs, False, length, 0)] = output_buffers
 
                 # Save gemlite cache after each capture
                 save_gemlite_cache()
@@ -387,11 +419,16 @@ class CudaGraphRunner:
 
         return graph, out
 
+    def _graph_key(self, bs, decode, length, cache_length):
+        key = (bs, decode, length, cache_length)
+        signature = getattr(self, "kv_signature", None)
+        return (*key, signature) if signature is not None and signature[0] != "bf16" else key
+
     def can_run(self, input_ids, position_ids, past_key_values, is_decode_phase=True, length=0, cache_length=0):
         cuda_graph_bs = input_ids.shape[0]
-        is_bs_supported = (cuda_graph_bs, is_decode_phase, length, cache_length) in self.graphs.keys()
+        is_bs_supported = self._graph_key(cuda_graph_bs, is_decode_phase, length, cache_length) in self.graphs
         if not self.disable_padding and is_decode_phase:
-            is_bs_supported = is_bs_supported or (self.max_bs, is_decode_phase, length, cache_length) in self.graphs.keys()
+            is_bs_supported = is_bs_supported or self._graph_key(self.max_bs, is_decode_phase, length, cache_length) in self.graphs
         if is_bs_supported == False:
             logger.debug('not supported', cuda_graph_bs, is_decode_phase, length, cache_length, self.graphs.keys())
         return is_bs_supported
@@ -406,13 +443,17 @@ class CudaGraphRunner:
         bs = self.capture_bs[index]
 
         # 拷贝真实数据到静态 buffer
+        self.input_ids.fill_(getattr(self.model_runner.runner_config, "mask_id", 0))
+        self.position_ids.zero_()
         self.input_ids[:raw_num_token].copy_(input_ids.flatten())
         self.position_ids[:raw_num_token].copy_(position_ids.flatten())
         if is_decode_phase:
             minimal_length = min(self.past_key_values.shape[4], past_key_values.shape[4], cache_length)
+            self.past_key_values[:, :, raw_bs:].zero_()
             self.past_key_values[:, :, :, :, minimal_length:].fill_(0)
             self.past_key_values[:, :, :raw_bs, :, :minimal_length].copy_(past_key_values[:, :, :, :, :minimal_length])
         if attention_mask is not None:
+            self.attention_mask[:bs, :length].zero_()
             minimal_length = min(self.attention_mask.shape[2], attention_mask.shape[2])
             self.attention_mask[:raw_bs, :length, :minimal_length].copy_(attention_mask[:, :, :minimal_length])
         self.raw_bs = raw_bs
@@ -428,7 +469,8 @@ class CudaGraphRunner:
         self.replay_prepare(input_ids, position_ids, past_key_values, is_decode_phase, length, attention_mask, cache_length)
 
         # Replay
-        self.graphs[(self.bs, is_decode_phase, length, cache_length)].replay()
+        self.graphs[self._graph_key(self.bs, is_decode_phase, length, cache_length)].replay()
+        self.replay_count = getattr(self, "replay_count", 0) + 1
 
-        output = self.output_buffers[(self.bs, is_decode_phase, length, cache_length)]
+        output = self.output_buffers[self._graph_key(self.bs, is_decode_phase, length, cache_length)]
         return output

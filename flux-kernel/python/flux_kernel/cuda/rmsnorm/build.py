@@ -253,6 +253,11 @@ def build_rmsnorm_fused_parallel(*, force: bool = False, verbose: bool = False) 
 
     if not force and _is_up_to_date():
         return SO_PATH
+    if os.environ.get("FLUX_KERNEL_REQUIRE_PREBUILT") == "1":
+        raise RuntimeError(
+            f"Precompiled Flux Kernel RMSNorm is missing or incompatible at {SO_PATH}. "
+            "Rebuild the deployment image with matching FLUX_KERNEL_CUDA_ARCH."
+        )
 
     _prepare_cuda_toolchain_env()
     OBJS_DIR.mkdir(parents=True, exist_ok=True)

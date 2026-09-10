@@ -170,6 +170,12 @@ def build_cuda_library(
     newest_dependency = max(path.stat().st_mtime for path in dependencies)
     if not force and library.exists() and stamp.exists() and stamp.read_text() == signature and library.stat().st_mtime > newest_dependency:
         return library
+    if os.environ.get("FLUX_KERNEL_REQUIRE_PREBUILT") == "1":
+        raise RuntimeError(
+            f"Precompiled Flux Kernel {name} is missing or incompatible at {library}. "
+            "Rebuild the deployment image for the current Torch/CUDA/GPU architecture "
+            "and source revision (FLUX_KERNEL_CUDA_ARCH)."
+        )
     if CUDA_HOME is None:
         raise RuntimeError("CUDA_HOME could not be resolved")
     objects.mkdir(parents=True, exist_ok=True)

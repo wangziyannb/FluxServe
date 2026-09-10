@@ -24,6 +24,8 @@ import math
 
 import torch
 
+from fluxserve.backend.layers.kv_quantization import FP8_DTYPE, cache_bytes
+
 
 class PagedKVCache:
     """Flashinfer-style Paged KV cache."""
@@ -255,8 +257,10 @@ class PagedKVCache:
         if self.uses_external_page_table and torch.any(pages <= 0):
             raise ValueError("external page table has unset page ids for write")
         offsets = positions % self.page_size
+        if self.data.dtype == FP8_DTYPE and kv.dtype != FP8_DTYPE:
+            raise TypeError("Paged FP8 cache writes require encoded KV data.")
         src = kv.to(device=self.device, dtype=self.data.dtype).permute(1, 0, 3, 2, 4)
-        self.data[:, :, pages, offsets] = src
+        cache_bytes(self.data)[:, :, pages, offsets] = cache_bytes(src)
 
     def materialize(
         self,
@@ -287,6 +291,6 @@ class PagedKVCache:
         offsets = positions % self.page_size
         for batch_idx, seq_id in enumerate(seq_ids.tolist()):
             pages = self.page_table[int(seq_id), logical_pages]
-            chunk = self.data[:, :, pages, offsets]
-            out[:, :, batch_idx] = chunk.permute(1, 0, 3, 2, 4)
+            chunk = cache_bytes(self.data)[:, :, pages, offsets]
+            cache_bytes(out)[:, :, batch_idx] = chunk.permute(1, 0, 3, 2, 4)
         return out

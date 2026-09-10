@@ -98,6 +98,13 @@ class AsyncLLM:
             self._task.cancel()
             with contextlib.suppress(asyncio.CancelledError):
                 await self._task
+        # Uvicorn can re-raise SIGTERM after its shutdown event. Finish worker
+        # and CUDA Graph cleanup here, before control leaves that event.
+        shutdown = getattr(self.executor, "shutdown_workers", None)
+        if shutdown is None:
+            shutdown = getattr(self.executor, "shutdown", None)
+        if shutdown is not None:
+            await self._execute(shutdown)
 
     async def generate_request(self, obj: GenerateReqInput) -> AsyncIterator[GenerateReqOutput]:
         await self.start()

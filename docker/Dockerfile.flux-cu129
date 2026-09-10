@@ -1,5 +1,5 @@
 ARG CUDA_VERSION=12.9.1
-FROM nvidia/cuda:${CUDA_VERSION}-cudnn-devel-ubuntu22.04
+FROM nvidia/cuda:${CUDA_VERSION}-cudnn-devel-ubuntu22.04 AS dependencies
 ARG FLASHINFER_DLLM_REV=6055bba6d7defefe69fe246473647165300b557a
 
 LABEL org.opencontainers.image.authors="Youpeng Zhao" \
@@ -10,7 +10,6 @@ ENV DEBIAN_FRONTEND=noninteractive \
     CUDA_HOME=/usr/local/cuda \
     TORCH_CUDA_ARCH_LIST="9.0;10.0a;12.0" \
     MAX_JOBS=4 \
-    FLASHINFER_WORKSPACE_BASE=/tmp \
     LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64
 
 RUN set -eux; \
@@ -128,6 +127,7 @@ RUN set -eux; \
         safetensors==0.8.0 \
         huggingface-hub==1.28.0 \
         numpy==2.3.3 \
+        einops==0.8.2 \
         aiohttp==3.13.0 \
         fastapi==0.118.2 \
         uvicorn==0.37.0 \
@@ -154,4 +154,44 @@ RUN set -eux; \
     python -m pip install -v .; \
     rm -rf /root/.cache/pip
 
-CMD ["/bin/bash", "--login"]
+# The dependencies target remains available for development. The default target
+# installs the repository and builds native libraries without needing a GPU.
+FROM dependencies AS runtime
+ARG FLUX_KERNEL_CUDA_ARCH="90a;100a;120"
+ENV FLUX_KERNEL_CUDA_ARCH=${FLUX_KERNEL_CUDA_ARCH} \
+    FLUXSERVE_FLASHINFER_REV=${FLASHINFER_DLLM_REV} \
+    FLUXSERVE_CACHE_DIR=/var/cache/fluxserve \
+    PYTHONUNBUFFERED=1 \
+    TOKENIZERS_PARALLELISM=false
+
+WORKDIR /opt/fluxserve
+COPY flux-kernel/python ./flux-kernel/python
+RUN set -eux; \
+    FLUX_KERNEL_SKIP_CUDA_BUILD=1 python -m pip install --no-deps --no-build-isolation ./flux-kernel/python; \
+    python -m flux_kernel.precompile; \
+    python -m flux_kernel.precompile --check
+
+COPY flux-scheduler ./flux-scheduler
+RUN python -m pip install --no-deps --no-build-isolation ./flux-scheduler
+
+COPY setup.py ./
+COPY python ./python
+COPY docker ./docker
+RUN set -eux; \
+    python -m pip install --no-deps --no-build-isolation .; \
+    python -m flux_kernel.precompile --check --output /opt/fluxserve/build-info.json; \
+    python /opt/fluxserve/docker/precompile_tvm_ffi.py; \
+    python -c "import fluxserve, flux_scheduler; from flux_kernel.ops import quantize_scatter_kv"; \
+    chmod -R a+rX /opt/fluxserve; \
+    mkdir -p /var/cache/fluxserve /calibration /datasets /models; \
+    chmod 1777 /var/cache/fluxserve; \
+    rm -rf /root/.cache/pip
+
+# Fail early on an incompatible/missing native binary instead of compiling into
+# read-only site-packages. Triton/FlashInfer JIT caches remain writable.
+ENV FLUX_KERNEL_REQUIRE_PREBUILT=1
+EXPOSE 8000
+HEALTHCHECK --interval=10s --timeout=3s --start-period=30m --retries=3 \
+    CMD python /opt/fluxserve/docker/healthcheck.py
+ENTRYPOINT ["python", "/opt/fluxserve/docker/entrypoint.py"]
+CMD ["--help"]

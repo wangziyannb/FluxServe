@@ -20,6 +20,7 @@
 
 
 import argparse
+import hashlib
 import json
 import os
 import string
@@ -304,6 +305,8 @@ def build_runner_config(args, batch_info):
         ),
         flashinfer_prefill_mode=getattr(args, "flashinfer_prefill_mode", "dense"),
         flashinfer_cache_mode=getattr(args, "flashinfer_cache_mode", "dense"),
+        kv_cache_dtype=getattr(args, "kv_cache_dtype", "auto"),
+        kv_cache_scales=getattr(args, "kv_cache_scales", None),
         kv_cache_layout=getattr(args, "kv_cache_layout", "dense"),
         page_size=getattr(args, "page_size", None),
         canvas_length=getattr(args, "canvas_length", None),
@@ -559,6 +562,14 @@ def run_worker(args, *, init_method: str = "env://"):
         args.dataset_format,
         apply_chat_template=is_diffusion_gemma,
     )
+    if getattr(args, "calibrate_kv", False):
+        if is_diffusion_gemma:
+            raise ValueError("KV calibration currently supports LLaDA2 only.")
+        all_input_ids, prompts, questions, ids = [
+            items[:args.num_samples] for items in (all_input_ids, prompts, questions, ids)
+        ]
+        if not all_input_ids:
+            raise ValueError("Calibration dataset is empty.")
     padded_gen_lens = calc_padded_gen_lens(args, all_input_ids)
     dataset_name = Path(args.dataset).stem
     os.makedirs(args.output_dir, exist_ok=True)
@@ -633,6 +644,11 @@ def run_worker(args, *, init_method: str = "env://"):
                 batch_size=args.batch_size,
             )
         warmup_runner(runner, args, device, logger)
+        observer = None
+        if getattr(args, "calibrate_kv", False):
+            from fluxserve.backend.layers.kv_quantization import KVCalibrationObserver, configure_kv_attention
+            observer = KVCalibrationObserver(model_config.num_hidden_layers, device)
+            configure_kv_attention(runner.model, runner.kv_quantization, observer)
 
         sorted_input_ids = [all_input_ids[i] for i in batch_info.sorted_indices]
         sorted_padded_gen_lens = [padded_gen_lens[i] for i in batch_info.sorted_indices]
@@ -642,7 +658,14 @@ def run_worker(args, *, init_method: str = "env://"):
             else range(0, len(sorted_input_ids), args.batch_size)
         )
 
+        generic_graph = getattr(runner, "graph_runner", None)
+        if generic_graph is not None:
+            generic_graph.replay_count = 0
+        flashinfer_graph = getattr(runner, "flashinfer_graph_runner", None)
+        if flashinfer_graph is not None:
+            flashinfer_graph.reset_serving_counts()
         start = time.time()
+        peak_kv_data_bytes = 0
         for i in iterator:
             input_ids = sorted_input_ids[i : i + args.batch_size]
             generation_lengths = sorted_padded_gen_lens[i : i + len(input_ids)]
@@ -664,6 +687,10 @@ def run_worker(args, *, init_method: str = "env://"):
                 )
             else:
                 out = runner.generate(batch_input_ids)
+            kv_cache = getattr(runner, "past_key_values", None)
+            kv_data = kv_cache if isinstance(kv_cache, torch.Tensor) else getattr(kv_cache, "data", None)
+            if isinstance(kv_data, torch.Tensor):
+                peak_kv_data_bytes = max(peak_kv_data_bytes, kv_data.numel() * kv_data.element_size())
             denoising_steps = (
                 getattr(runner, "last_denoising_steps", None)
                 if is_diffusion_gemma
@@ -701,6 +728,30 @@ def run_worker(args, *, init_method: str = "env://"):
                 )
         stop = time.time()
 
+        _write_memory_and_graph_metrics(args, runner, batch_info, peak_kv_data_bytes, rank, world_size)
+
+        if observer is not None:
+            payload = observer.finish(model_config, {
+                "dataset": str(Path(args.dataset).resolve()),
+                "dataset_sha256": hashlib.sha256(Path(args.dataset).read_bytes()).hexdigest(),
+                "num_samples": len(all_input_ids), "sample_ids": ids,
+                "gen_length": args.gen_len, "block_length": args.block_length,
+                "threshold": args.threshold, "low_threshold": args.low_threshold,
+                "parallel_decoding": args.parallel_decoding,
+                "generation_lengths": padded_gen_lens,
+                "batch_size": args.batch_size, "mini_batch_size": args.mini_batch_size,
+                "tp_size": args.tp_size, "ep_size": args.ep_size,
+                "attention_backend": "sdpa", "kv_cache_dtype": "bf16",
+                "warmup_excluded": True,
+            }, group=runner.tp_group.device_group)
+            if rank == 0:
+                destination = Path(args.output)
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                temporary = destination.with_suffix(destination.suffix + ".tmp")
+                temporary.write_text(json.dumps(payload, indent=2) + "\n")
+                temporary.replace(destination)
+                logger.info(f"Saved calibrated KV scales to {destination}")
+
         if rank == 0:
             _write_results(
                 args,
@@ -717,9 +768,11 @@ def run_worker(args, *, init_method: str = "env://"):
                 eos_ids,
             )
     finally:
-        if runner is not None and hasattr(runner, "shutdown_cuda_graphs"):
-            runner.shutdown_cuda_graphs(log=False)
-        destroy_distributed()
+        try:
+            if runner is not None and hasattr(runner, "shutdown_cuda_graphs"):
+                runner.shutdown_cuda_graphs(log=False)
+        finally:
+            destroy_distributed()
 
 
 def resolve_log_file(args) -> str:
@@ -728,6 +781,41 @@ def resolve_log_file(args) -> str:
     if not os.path.isabs(args.log_file) and os.path.dirname(args.log_file) == "":
         return os.path.join(args.output_dir, args.log_file)
     return args.log_file
+
+
+def _write_memory_and_graph_metrics(args, runner, batch_info, kv_bytes, rank, world_size):
+    """Allocator peaks include model loading, warmup, capture and generation."""
+    graph = getattr(runner, "graph_runner", None)
+    graph_cache = getattr(graph, "past_key_values", None)
+    flashinfer_graph = getattr(runner, "flashinfer_graph_runner", None)
+    local = {
+        "rank": rank,
+        "kv_data_bytes": kv_bytes,
+        "graph_input_kv_bytes": graph_cache.nbytes if isinstance(graph_cache, torch.Tensor) else 0,
+        "peak_allocated_bytes": torch.cuda.max_memory_allocated(),
+        "peak_reserved_bytes": torch.cuda.max_memory_reserved(),
+        "generic_graph_replays": getattr(graph, "replay_count", 0),
+        "flashinfer_graph": flashinfer_graph.stats() if flashinfer_graph is not None else {},
+    }
+    ranks = [None] * world_size
+    if torch.distributed.is_initialized() and world_size > 1:
+        torch.distributed.all_gather_object(ranks, local)
+    else:
+        ranks = [local]
+    if rank == 0:
+        quant = getattr(runner, "kv_quantization", None)
+        payload = {
+            "version": 1, "kv_cache_dtype": getattr(quant, "dtype", "bf16"),
+            "kv_scale_source": getattr(quant, "source", "none"),
+            "attention_backend": args.attention_backend,
+            "nfe": batch_info.total_forward,
+            "generated_tokens": batch_info.total_token,
+            "generation_seconds": batch_info.total_time,
+            "tps": batch_info.total_token / batch_info.total_time if batch_info.total_time else 0,
+            "ranks": ranks,
+        }
+        path = Path(args.output_dir) / f"{args.exp_name}_metrics.json"
+        path.write_text(json.dumps(payload, indent=2) + "\n")
 
 
 def _write_results(
@@ -801,8 +889,13 @@ def _write_results(
             f.write("\n")
 
 
-def add_bench_offline_subparser(subparsers) -> None:
-    parser = subparsers.add_parser("bench_offline", help="Offline batched benchmark.")
+def add_bench_offline_subparser(subparsers, command="bench_offline") -> None:
+    parser = subparsers.add_parser(command, help=("Calibrate LLaDA2 FP8 KV scales." if command == "calibrate_kv_cache" else "Offline batched benchmark."))
+    from fluxserve.backend.layers.kv_quantization import add_kv_cache_arguments
+    add_kv_cache_arguments(parser)
+    if command == "calibrate_kv_cache":
+        parser.add_argument("--output", required=True, help="Output scale JSON.")
+        parser.add_argument("--num-samples", type=int, default=128)
     parser.add_argument("--model", "--model-name", "--model_name", dest="model_name", required=True)
     parser.add_argument(
         "--quantization",
@@ -951,3 +1044,18 @@ def bench_offline(args) -> None:
     else:
         os.environ.setdefault("FLUXSERVE_SUPPRESS_DEFAULT_MOE_CONFIG_WARNING", "1")
         run_worker(args)
+
+
+def calibrate_kv_cache(args) -> None:
+    """Reuse benchmark decoding, with observers enabled only after warmup."""
+    if args.num_samples <= 0:
+        raise ValueError("--num-samples must be positive")
+    args.calibrate_kv = True
+    args.attention_backend = "sdpa"
+    args.attention_backend_explicit = True
+    args.kv_cache_dtype = "bf16"
+    args.kv_cache_scales = None
+    args.use_cuda_graph = False
+    args.use_prefill_cuda_graph = False
+    args.use_decode_cuda_graph = False
+    bench_offline(args)

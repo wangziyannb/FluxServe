@@ -133,10 +133,9 @@ class ModelOptFp8Config(QuantizationConfig):
                 f"got {quant_algo or '<missing>'!r}."
             )
 
-        kv_algo = quant.get("kv_cache_quant_algo")
-        kv_scheme = quant.get("kv_cache_scheme")
-        if kv_algo not in (None, "") or kv_scheme not in (None, {}):
-            raise ValueError("ModelOpt FP8 KV-cache quantization is not supported.")
+        from fluxserve.backend.layers.kv_quantization import checkpoint_kv_dtype
+
+        checkpoint_kv_dtype(config)
 
         config_groups = quant.get("config_groups")
         if config_groups is not None:

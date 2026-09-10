@@ -140,6 +140,8 @@ class RunnerConfig:
     cuda_graph_capture_batch_sizes: Sequence[int] | None = None
     flashinfer_prefill_mode: str = "dense"
     flashinfer_cache_mode: str = "dense"
+    kv_cache_dtype: str = "auto"
+    kv_cache_scales: str | None = None
     kv_cache_layout: Literal["dense", "paged"] = "dense"
     page_size: int | None = None
     canvas_length: int | None = None

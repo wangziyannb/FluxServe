@@ -108,7 +108,7 @@ class KVCache:
 
             device = self._raw_data.device
             num_layer, _, batch_size, num_heads, seq_len, hidden_dim = self._raw_data.shape
-            self._data = torch.zeros(num_layer, 2, batch_size, num_heads, self.length, hidden_dim, device=device, dtype=torch.bfloat16)
+            self._data = torch.zeros(num_layer, 2, batch_size, num_heads, self.length, hidden_dim, device=device, dtype=self._raw_data.dtype)
             self._data[:, :, :, :, :seq_len] = self._raw_data
 
     def consolidate(self):

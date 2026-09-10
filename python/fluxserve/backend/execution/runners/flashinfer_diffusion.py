@@ -4,6 +4,8 @@ import time
 
 import torch
 
+from fluxserve.backend.layers.kv_quantization import cache_bytes
+
 from fluxserve.backend.execution.forward_batch_info import ForwardBatch, ForwardMode
 from fluxserve.backend.engine.request import RequestState
 from fluxserve.backend.execution.runners.block_diffusion import BlockDiffusionRunner
@@ -32,7 +34,8 @@ class FlashInferDiffusionRunner(BlockDiffusionRunner):
                 "FlashInferDiffusionRunner requires attention_backend='flashinfer'."
             )
         if self.runner_config.kv_cache_layout == "paged":
-            _require_flashinfer_paged_prefill()
+            if self.kv_cache_dtype != torch.float8_e4m3fn:
+                _require_flashinfer_paged_prefill()
         self._paged_request_slots: dict[str, int] = {}
         self.flashinfer_graph_runner = (
             FlashInferCudaGraphRunner(
@@ -90,6 +93,9 @@ class FlashInferDiffusionRunner(BlockDiffusionRunner):
                 self.tp_group.device_group, log=log
             )
 
+        from fluxserve.backend.layers.attention.fp8_flashinfer import clear_fp8_flashinfer_states
+        clear_fp8_flashinfer_states()
+
     def _release_paged_slot(self, request_id: str) -> None:
         self._paged_request_slots.pop(request_id, None)
 
@@ -108,6 +114,7 @@ class FlashInferDiffusionRunner(BlockDiffusionRunner):
                 and not existing.uses_external_page_table
                 and existing.batch_size >= int(batch_size)
                 and existing.max_length >= self.max_length
+                and existing.data.dtype == getattr(self, "kv_cache_dtype", torch.bfloat16)
                 and existing.page_size == int(self.runner_config.page_size)
                 and existing.local_kv_heads
                 == max(1, config.num_key_value_heads // get_attention_tp_size())
@@ -132,7 +139,7 @@ class FlashInferDiffusionRunner(BlockDiffusionRunner):
                     max(self.runner_config.cuda_graph_capture_sizes)
                     // int(self.runner_config.page_size),
                 ),
-                dtype=torch.bfloat16,
+                dtype=getattr(self, "kv_cache_dtype", torch.bfloat16),
                 device=self.device,
             )
         config = self.model.model.config
@@ -151,7 +158,7 @@ class FlashInferDiffusionRunner(BlockDiffusionRunner):
                 self.max_length,
                 head_dim,
             ),
-            dtype=torch.bfloat16,
+            dtype=getattr(self, "kv_cache_dtype", torch.bfloat16),
             device=self.device,
         )
 
@@ -224,6 +231,7 @@ class FlashInferDiffusionRunner(BlockDiffusionRunner):
             isinstance(getattr(self, "past_key_values", None), PagedKVCache)
             and self.past_key_values.num_pages >= int(num_device_pages)
             and self.past_key_values.batch_size >= max_num_seqs
+            and self.past_key_values.data.dtype == getattr(self, "kv_cache_dtype", torch.bfloat16)
         ):
             return
         if self.flashinfer_graph_runner is not None:
@@ -245,7 +253,7 @@ class FlashInferDiffusionRunner(BlockDiffusionRunner):
                 max(self.runner_config.cuda_graph_capture_sizes)
                 // int(self.runner_config.page_size),
             ),
-            dtype=torch.bfloat16,
+            dtype=getattr(self, "kv_cache_dtype", torch.bfloat16),
             device=self.device,
         )
         self.past_key_values.scheduler_num_pages = scheduler_pages
@@ -1192,9 +1200,10 @@ class FlashInferDiffusionRunner(BlockDiffusionRunner):
         if self._use_flashinfer_paged_cache():
             decoding_past_key_values = None
         else:
-            decoding_past_key_values = self.past_key_values[
+            decoding_past_key_values = cache_bytes(self.past_key_values)[
                 :, :, seq_ids, :, :current_cache_length
             ]
+            decoding_past_key_values = decoding_past_key_values.view(self.past_key_values.dtype)
         decoding_pos_ids = torch.arange(
             self.block_length, device=self.device, dtype=torch.long
         ).unsqueeze(0).repeat(seq_ids.shape[0], 1)

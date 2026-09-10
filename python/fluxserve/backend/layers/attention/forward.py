@@ -35,6 +35,9 @@ from fluxserve.backend.layers.attention.flashinfer import (
     FlashInferRaggedAttention,
     FlashInferRaggedPrefillAttention,
 )
+from fluxserve.backend.layers.kv_quantization import (
+    KVQuantizationConfig, cache_bytes, decode_kv, encode_kv,
+)
 
 
 class AttentionForward:
@@ -42,6 +45,9 @@ class AttentionForward:
 
     def __init__(self, config: AttentionForwardConfig):
         self.config = config
+        self.kv_quantization = KVQuantizationConfig()
+        self.kv_observer = None
+        self.flashinfer_fp8 = None
         self.dense = DenseAttention(config)
         self.flashinfer_ragged_prefill = FlashInferRaggedPrefillAttention(config)
         self.flashinfer_paged_prefill = FlashInferPagedPrefillAttention(config)
@@ -59,6 +65,13 @@ class AttentionForward:
         attention_mask: Optional[torch.Tensor] = None,
         forward_batch: Optional[ForwardBatch] = None,
     ) -> tuple[torch.Tensor, Optional[tuple[torch.Tensor, torch.Tensor]]]:
+        if self.kv_observer is not None:
+            # LLaDA2 calls here after QK norm and RoPE, before any cache splice.
+            self.kv_observer.observe(self.config.layer_id, k, v)
+        if self.kv_quantization.dtype == "fp8_e4m3":
+            return self._forward_fp8(
+                q, k, v, past_key_values, use_cache, attention_mask, forward_batch,
+            )
         if self.flashinfer_paged_prefill.can_run(
             q,
             k,
@@ -127,3 +140,36 @@ class AttentionForward:
             )
 
         return self.dense.forward(q, k, v, attention_mask), present_key_values
+
+    def _forward_fp8(self, q, k, v, past, use_cache, mask, batch):
+        k_scale, v_scale = self.kv_quantization.scales[self.config.layer_id]
+        paged = batch is not None and (
+            batch.use_flashinfer_paged_prefill or batch.use_flashinfer_paged_decode
+        )
+        if paged:
+            # The paged path fuses encoding with the scatter into persistent KV.
+            if self.flashinfer_fp8 is None:
+                from fluxserve.backend.layers.attention.fp8_flashinfer import FP8FlashInferAttention
+                self.flashinfer_fp8 = FP8FlashInferAttention(self.config)
+            out = self.flashinfer_fp8.forward_paged(q, k, v, past, batch, k_scale, v_scale)
+            return out, (encode_kv(k, k_scale), encode_kv(v, v_scale)) if use_cache else None
+
+        k, v = encode_kv(k, k_scale), encode_kv(v, v_scale)
+        if past is not None:
+            if past[0].dtype != k.dtype or past[1].dtype != v.dtype:
+                raise TypeError("FP8 attention requires an encoded FP8 cache.")
+            k, v = self.dense.splice_cache(
+                cache_bytes(k), cache_bytes(v), (cache_bytes(past[0]), cache_bytes(past[1])),
+            )
+            k, v = k.view(self.kv_quantization.torch_dtype), v.view(self.kv_quantization.torch_dtype)
+        present = (k, v) if use_cache else None
+        ragged = batch is not None and (batch.use_flashinfer_prefill or batch.use_flashinfer_decode)
+        if ragged:
+            if self.flashinfer_fp8 is None:
+                from fluxserve.backend.layers.attention.fp8_flashinfer import FP8FlashInferAttention
+                self.flashinfer_fp8 = FP8FlashInferAttention(self.config)
+            out = self.flashinfer_fp8.forward_ragged(q, k, v, batch, k_scale, v_scale)
+        else:
+            # Only this layer is materialized, including the active diffusion block.
+            out = self.dense.forward(q, decode_kv(k, k_scale), decode_kv(v, v_scale), mask)
+        return out, present

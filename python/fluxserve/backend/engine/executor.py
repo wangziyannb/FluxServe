@@ -60,11 +60,15 @@ class PlanExecutor(Protocol):
 
 
 class BlockDiffusionExecutor:
-    def __init__(self, runner, tokenizer):
+    def __init__(self, runner, tokenizer, *, startup_warmup=True):
         self.runner = runner
         self.tokenizer = tokenizer
+        self.startup_warmup = startup_warmup
 
     async def startup(self) -> dict[str, int | float]:
+        warmup = getattr(self.runner, "prepare_online_warmup", None)
+        if self.startup_warmup and warmup is not None:
+            warmup()
         prepare = getattr(self.runner, "prepare_online_cuda_graphs", None)
         return prepare() if prepare is not None else {}
 

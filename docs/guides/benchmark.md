@@ -8,6 +8,10 @@ execution requires a Blackwell GPU and uses the FlashInfer revision pinned in
 `docker/Dockerfile.flux-cu129`. The first NVFP4 MoE run compiles the device
 kernel, so warm up the model before recording throughput.
 
+LLaDA2 KV storage is configured independently with `--kv-cache-dtype` and
+`--kv-cache-scales`. See [FP8 KV cache and offline calibration](fp8-kv-cache.md)
+for usage and the current validation status.
+
 ```bash
 fluxserve bench_offline \
   --model inclusionAI/LLaDA2.0-mini \
