@@ -43,14 +43,23 @@ def get_flashinfer_workspace_size() -> int:
 
 def _require_flashinfer_dllm():
     try:
-        from flashinfer.dllm import BatchBlockExtendRaggedOffsetWrapper
+        import inspect
+        from flashinfer import BatchPrefillWithRaggedKVCacheWrapper
+
+        wrapper_cls = BatchPrefillWithRaggedKVCacheWrapper
+        params = inspect.signature(wrapper_cls.__init__).parameters
+        plan_params = inspect.signature(wrapper_cls.plan).parameters
+        if not {"block_extend", "block_size"}.issubset(params):
+            raise TypeError("ragged wrapper lacks native block-extend constructor")
+        if not {"q_offsets", "kv_offsets"}.issubset(plan_params):
+            raise TypeError("ragged wrapper lacks offset-aware plan()")
     except Exception as exc:
         raise RuntimeError(
             "attention_backend='flashinfer' requires a flashinfer-python build "
-            "with flashinfer.dllm.BatchBlockExtendRaggedOffsetWrapper. "
+            "with native block-extend BatchPrefillWithRaggedKVCacheWrapper. "
             "Run with attention_backend='sdpa' or use the rebuilt container."
         ) from exc
-    return BatchBlockExtendRaggedOffsetWrapper
+    return wrapper_cls
 
 
 def _require_flashinfer_paged_prefill():
@@ -89,7 +98,7 @@ def _require_flashinfer_paged_prefill():
 
 
 class BatchBlockExtendRaggedOffsetWrapper:
-    """FluxServe-compatible wrapper over upstream flashinfer.dllm."""
+    """FluxServe adapter over the public ragged block-extend API."""
 
     def __init__(
         self,
@@ -108,7 +117,8 @@ class BatchBlockExtendRaggedOffsetWrapper:
         self.wrapper = wrapper_cls(
             workspace,
             kv_layout=kv_layout,
-            dllm_block_size=int(dllm_block_size),
+            block_extend=True,
+            block_size=int(dllm_block_size),
             backend=backend,
         )
         self.plan_key: tuple[Any, ...] | None = None
@@ -144,8 +154,7 @@ class BatchBlockExtendRaggedOffsetWrapper:
             head_dim,
             qo_indptr.device.index,
         )
-        if self.plan_key == effective_plan_key:
-            self.sm_scale = sm_scale
+        if self.plan_key == effective_plan_key and self.sm_scale == sm_scale:
             return
 
         self.wrapper.plan(
@@ -153,8 +162,11 @@ class BatchBlockExtendRaggedOffsetWrapper:
             kv_indptr=kv_indptr,
             num_qo_heads=num_qo_heads,
             num_kv_heads=num_kv_heads,
-            head_dim=head_dim,
+            head_dim_qk=head_dim,
             q_data_type=q_data_type,
+            kv_data_type=q_data_type,
+            causal=False,
+            sm_scale=sm_scale,
             q_offsets=q_offsets,
             kv_offsets=kv_offsets,
         )

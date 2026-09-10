@@ -2,6 +2,7 @@
 
 日期：2026-09-10。基于 `quantization` 分支 `2972589` 的工作区改动。
 部署用法见 [Docker deployment](../guides/deployment.md)。
+后续 0.6.18 依赖修复及 BF16/FP8 验证见 [FlashInfer runtime 更新](flashinfer-runtime.md)。
 
 ## 构建
 

@@ -93,8 +93,9 @@ python /data/fluxserve-kv-smoke-20260910-rootfs/run_case.py flashinfer
 
 现有 runtime 的 FlashInfer 0.6.13 公共 FA2 FP8 路径已做小规模验证；
 原有 BF16 paged 路径仍要求仓库现有的 native block-extend/offset API。
-当前 rootfs 的公共 wrapper 不暴露这些 native 参数，因此该环境不能用于接受 BF16 paged 全模型对比结果。
+本节使用的 0.6.13 rootfs 的公共 wrapper 不暴露这些 native 参数，因此该环境不能用于接受 BF16 paged 全模型对比结果。
 BF16 原有实现保留；完整 FlashInfer A/B 需使用满足原有 BF16 依赖要求的环境。
+后续镜像已升级至具有这些接口的 0.6.18；实际验证范围见 [FlashInfer runtime 更新](flashinfer-runtime.md)。
 
 空闲检查记录：2026-09-10 05:58 UTC，GPU 0–7 利用率均为 100%，已使用显存约 62–91 GiB/卡，
 均存在非本次实验的计算进程。完整验收脚本停止于该检查；随后仅按用户要求另行运行上述四卡小样本检查。

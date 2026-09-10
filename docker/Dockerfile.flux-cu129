@@ -1,6 +1,7 @@
 ARG CUDA_VERSION=12.9.1
 FROM nvidia/cuda:${CUDA_VERSION}-cudnn-devel-ubuntu22.04 AS dependencies
-ARG FLASHINFER_DLLM_REV=6055bba6d7defefe69fe246473647165300b557a
+# Public paged/ragged block-extend + FP8 FA2 + CUTLASS NVFP4 MoE APIs.
+ARG FLASHINFER_DLLM_REV=5ce4d077c33bbe167386cf5487a4a5bb4bcafbfd
 
 LABEL org.opencontainers.image.authors="Youpeng Zhao" \
       org.opencontainers.image.description="FluxServe image with CUDA 12.9 userspace"
@@ -139,19 +140,28 @@ RUN set -eux; \
         ninja==1.13.0 \
         nvidia-ml-py==13.580.82 \
         apache-tvm-ffi==0.1.12 \
-        nvidia-cutlass-dsl==4.6.0 \
+        nvidia-cutlass-dsl==4.7.0 \
+        cuda-python==12.9.7 \
         sgl-kernel==0.3.15; \
     python -m pip uninstall -y pynvml || true; \
     python -m pip uninstall -y flashinfer-python || true
 
+COPY docker/check_flashinfer.py /opt/fluxserve/docker/check_flashinfer.py
 RUN set -eux; \
-    git clone --recursive https://github.com/kennethzhao24/flashinfer-dllm \
-        -b feature/block-extend \
+    git clone https://github.com/FLX-OSS/flashinfer-dllm \
+        -b dllm/block-decode \
         /flashinfer-dllm-workspace/flashinfer-dllm; \
     cd /flashinfer-dllm-workspace/flashinfer-dllm; \
     git checkout --detach "${FLASHINFER_DLLM_REV}"; \
-    git submodule update --init --recursive; \
-    python -m pip install -v .; \
+    git submodule update --init --recursive 3rdparty/cutlass 3rdparty/spdlog 3rdparty/cccl; \
+    python -m pip freeze > /tmp/fluxserve-runtime-constraints.txt; \
+    BUILD_NVEP=0 FLASHINFER_BUILD_NO_PIP=1 python -m pip install -v \
+        --no-build-isolation -c /tmp/fluxserve-runtime-constraints.txt .; \
+    # apt tools use Debian version strings that pip cannot validate. Check the
+    # pip-managed runtime without the separate distro Python package directory.
+    python -c 'import sys; sys.path = [p for p in sys.path if p != "/usr/lib/python3/dist-packages"]; from pip._internal.cli.main import main; sys.exit(main(["check"]))'; \
+    python /opt/fluxserve/docker/check_flashinfer.py --expected-revision "${FLASHINFER_DLLM_REV}"; \
+    rm /tmp/fluxserve-runtime-constraints.txt; \
     rm -rf /root/.cache/pip
 
 # The dependencies target remains available for development. The default target
@@ -181,6 +191,8 @@ RUN set -eux; \
     python -m pip install --no-deps --no-build-isolation .; \
     python -m flux_kernel.precompile --check --output /opt/fluxserve/build-info.json; \
     python /opt/fluxserve/docker/precompile_tvm_ffi.py; \
+    python /opt/fluxserve/docker/check_flashinfer.py \
+        --expected-revision "${FLASHINFER_DLLM_REV}" --manifest /opt/fluxserve/build-info.json; \
     python -c "import fluxserve, flux_scheduler; from flux_kernel.ops import quantize_scatter_kv"; \
     chmod -R a+rX /opt/fluxserve; \
     mkdir -p /var/cache/fluxserve /calibration /datasets /models; \

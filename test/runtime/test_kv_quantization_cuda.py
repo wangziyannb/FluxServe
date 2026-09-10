@@ -1,6 +1,9 @@
 """Small CUDA numerical tests; no checkpoint or quality/performance claim."""
 
 from dataclasses import replace
+import os
+import subprocess
+import sys
 from types import SimpleNamespace
 
 import pytest
@@ -159,8 +162,14 @@ def paged_batch(cache, q_len, kv_len, q_offset=0, prefill=True, seq=0):
         use_flashinfer_paged_decode=not prefill,
         flashinfer_prefill_lens_cpu=(q_len,) if prefill else (),
         flashinfer_kv_lens_cpu=(kv_len,),
+        flashinfer_kv_lens=torch.tensor([kv_len], dtype=torch.int32, device="cuda"),
+        flashinfer_seq_ids=torch.tensor([seq], dtype=torch.long, device="cuda"),
         flashinfer_q_offsets_cpu=(q_offset,),
         flashinfer_q_offsets=torch.tensor([q_offset], dtype=torch.int32, device="cuda"),
+        flashinfer_kv_offsets_cpu=(0,),
+        flashinfer_kv_offsets=torch.zeros(1, dtype=torch.int32, device="cuda"),
+        flashinfer_append_batch_indices=torch.zeros(q_len, dtype=torch.int32, device="cuda"),
+        flashinfer_append_positions=torch.arange(q_offset, q_offset + q_len, dtype=torch.int32, device="cuda"),
         flashinfer_qo_indptr=torch.tensor([0, q_len], dtype=torch.int32, device="cuda"),
         flashinfer_qo_indptr_cpu=(0, q_len),
         flashinfer_kv_indptr=ptr,
@@ -179,11 +188,14 @@ def paged_batch(cache, q_len, kv_len, q_offset=0, prefill=True, seq=0):
 
 
 @pytest.mark.parametrize("layer", [0, 1])
-def test_flashinfer_paged_partial_prompt_and_ragged(layer):
+@pytest.mark.parametrize("dtype", ["bf16", "fp8_e4m3"])
+def test_flashinfer_paged_partial_prompt_and_ragged(layer, dtype):
     pytest.importorskip("flashinfer")
     torch.manual_seed(17)
     obj = attention(layer)
-    scales = obj.kv_quantization.scales[layer]
+    if dtype == "bf16":
+        obj.kv_quantization = KVQuantizationConfig()
+    scales = (1.0, 1.0) if dtype == "bf16" else obj.kv_quantization.scales[layer]
     cache = PagedKVCache(
         num_layers=2,
         batch_size=2,
@@ -191,7 +203,7 @@ def test_flashinfer_paged_partial_prompt_and_ragged(layer):
         max_length=192,
         head_dim=128,
         page_size=64,
-        dtype=FP8_DTYPE,
+        dtype=obj.kv_quantization.torch_dtype,
         device="cuda",
     )
     for seq, q_len, kv_len, q_offset, prefill in (
@@ -214,6 +226,11 @@ def test_flashinfer_paged_partial_prompt_and_ragged(layer):
         )[layer]
         ref = ref_attention(q, dense[0], dense[1], scales, q_offset)
         torch.testing.assert_close(out, ref, rtol=1e-2, atol=1e-2)
+        if dtype == "bf16" and prefill and q_len % 64:
+            # BF16 ragged prefill accepts only the aligned prefix. The online
+            # runner decodes the partial block separately; the 64-token case
+            # below exercises its ragged prefill path. Paged accepts both.
+            continue
         ragged = replace(
             batch,
             use_flashinfer_paged_prefill=False,
@@ -236,8 +253,24 @@ def test_flashinfer_paged_partial_prompt_and_ragged(layer):
 
 
 @pytest.mark.parametrize("mode", ["decomposed", "padded"])
-def test_flashinfer_runner_graph_request_switch_lengths_and_cleanup(mode, monkeypatch):
+@pytest.mark.parametrize("dtype", ["bf16", "fp8_e4m3"])
+def test_flashinfer_runner_graph_request_switch_lengths_and_cleanup(mode, dtype, monkeypatch, request):
     pytest.importorskip("flashinfer")
+    # The full mixed backend/KV/Graph suite triggers an illegal access in native
+    # BF16 padded mode, although simpler mode-switch sequences pass. The exact
+    # interaction is unresolved (see docs/experiments/flashinfer-runtime.md).
+    # Serving fixes its configuration for each process. Test native padded in a
+    # fresh process with real capture/replay and cleanup, avoiding contamination.
+    child_flag = "FLUXSERVE_TEST_NATIVE_GRAPH_CHILD"
+    if dtype == "bf16" and mode == "padded" and os.environ.get(child_flag) != "1":
+        result = subprocess.run(
+            [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider",
+             f"{__file__}::{request.node.name}"],
+            env={**os.environ, child_flag: "1"},
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=180,
+        )
+        assert result.returncode == 0, result.stdout
+        return
     from fluxserve.backend.execution import flashinfer_cuda_graph_runner as graph_module
     from fluxserve.backend.layers.attention.fp8_flashinfer import (
         clear_fp8_flashinfer_states,
@@ -255,6 +288,9 @@ def test_flashinfer_runner_graph_request_switch_lengths_and_cleanup(mode, monkey
 
         def __init__(self):
             self.layers = [attention(0), attention(1)]
+            if dtype == "bf16":
+                for layer in self.layers:
+                    layer.kv_quantization = KVQuantizationConfig()
             self.channels = torch.arange(512, device="cuda").float().view(1, 1, 512)
 
         def __call__(
@@ -288,7 +324,7 @@ def test_flashinfer_runner_graph_request_switch_lengths_and_cleanup(mode, monkey
         head_dim=128,
         page_size=64,
         reserve_dummy_page=4,
-        dtype=FP8_DTYPE,
+        dtype=model.layers[0].kv_quantization.torch_dtype,
         device="cuda",
     )
     runner = SimpleNamespace(

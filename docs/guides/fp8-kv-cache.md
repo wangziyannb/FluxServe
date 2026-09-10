@@ -94,7 +94,7 @@ checkpoint 接入 `model.layers.N.self_attn.k_proj.k_scale` / `v_proj.v_scale`�
 
 - **SDPA/Flex**：持久存储 FP8，仅在计算当前层 attention 时反量化；不同时创建整模型的 BF16 KV 副本。
 - **FlashInfer paged**：Triton 融合量化与页写入；Q/输出为 BF16，KV 为 FP8，公共 FA2 wrapper 接收每层 K/V scale。显式 block-causal mask 支持位置偏移和块内双向注意力。
-- **FlashInfer ragged 输入**：使用公共 paged FA2 wrapper 的 `page_size=1` 零复制视图。仓库固定的 FlashInfer 0.6.13 ragged FA2 实现会忽略 BF16 Q 路径的 `k_scale`/`v_scale`；此适配避免错误缩放，不创建 BF16 历史缓存。
+- **FlashInfer ragged 输入**：使用公共 paged FA2 wrapper 的 `page_size=1` 零复制视图。已检查的 FlashInfer 0.6.13 和当前固定的 0.6.18 ragged FA2 实现均未应用 BF16 Q / FP8 KV 路径的 `k_scale`/`v_scale`；此适配避免错误缩放，不创建 BF16 历史缓存。
 - **内存**：相同容量的 FP8 KV 数据字节数恰为 BF16 的一半。页表、mask、workspace、权重、Graph 输出和临时反量化仍有开销；总显存和 TPS 不保证减半或提升。
 
 Graph capture 前完成 scale 固定、wrapper planning、kernel warmup 和固定地址缓冲区分配。

@@ -21,6 +21,32 @@ use `100a` for B200, for example. CUDA, Torch, Triton, and the FlashInfer fork
 revision are pinned in the Dockerfile. Build and runtime must use the same
 native architecture configuration.
 
+FlashInfer comes from `FLX-OSS/flashinfer-dllm`, branch `dllm/block-decode`, pinned
+to `5ce4d077c33bbe167386cf5487a4a5bb4bcafbfd` (0.6.18). The older personal fork's
+0.6.13 revision lacks the public paged block-extend API used by BF16 KV. Both
+BF16 paged and ragged attention now use the public wrappers; FP8 KV retains its
+FA2 path with explicit masks and per-layer scales.
+
+The build verifies the pinned revision and the paged/ragged block-extend,
+Graph offset-buffer, FP8 scale, and CUTLASS NVFP4 MoE interfaces without a GPU:
+
+```bash
+docker run --rm fluxserve:h200 python /opt/fluxserve/docker/check_flashinfer.py
+```
+
+The final manifest records these API checks separately from GPU validation.
+FlashInfer installation preserves the installed Torch/CUDA stack using pip
+constraints, with CUDA Python 12.9.7 and CUTLASS DSL 4.7.0. Its optional native
+NIXL/NCCL EP build is disabled; FluxServe uses its own TP/EP communication path.
+
+The CLI fixes the attention, KV dtype, and Graph mode for each serving process.
+The full GPU test suite that mixes these configurations in one CUDA process
+still triggers an illegal memory access in native BF16 padded Graph mode;
+simpler mode-switch sequences pass, and the exact interaction is unresolved.
+GPU tests isolate native padded mode in a subprocess and check real capture,
+replay, and cleanup. The mixed-process failure is recorded separately in the
+validation report; switching configurations within one process is not validated.
+
 RMSNorm, RoPE, activation, and MoE CUDA libraries are compiled during the image
 build without initializing a GPU. The build checks the installed libraries and
 writes `/opt/fluxserve/build-info.json`, including architecture, dependency
@@ -151,4 +177,5 @@ task protected from the HTTP caller's cancellation, still using the execution
 lock. Shutdown drains these pending releases before executor cleanup; release
 failures are logged even when the client has already disconnected.
 
-Validation results are recorded in [Docker deployment experiments](../experiments/docker-deployment.md).
+Current FlashInfer validation is recorded in [FlashInfer runtime experiments](../experiments/flashinfer-runtime.md).
+Earlier image validation is recorded in [Docker deployment experiments](../experiments/docker-deployment.md).
