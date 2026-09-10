@@ -68,6 +68,7 @@ class AsyncLLM:
         self._task: asyncio.Task | None = None
         self._closed = False
         self._execution_lock = asyncio.Lock()
+        self._release_tasks: set[asyncio.Task] = set()
 
     async def _execute(self, method, *args):
         """Run synchronous CUDA/NCCL coroutine bodies away from the HTTP loop."""
@@ -122,6 +123,12 @@ class AsyncLLM:
             self._task.cancel()
             with contextlib.suppress(asyncio.CancelledError):
                 await self._task
+        # Client cancellation may have stopped waiting for a release. Drain
+        # those engine-owned tasks before destroying their CUDA/NCCL resources.
+        if self._release_tasks:
+            await asyncio.shield(asyncio.gather(
+                *self._release_tasks, return_exceptions=True,
+            ))
         # Uvicorn can re-raise SIGTERM after its shutdown event. Finish worker
         # and CUDA Graph cleanup here, before control leaves that event.
         shutdown = getattr(self.executor, "shutdown_workers", None)
@@ -162,14 +169,15 @@ class AsyncLLM:
             raise
 
     async def abort(self, rid: str, reason: str = "aborted") -> None:
-        state = self._states.get(rid)
+        # Complete logical cancellation without an await: an HTTP cancel scope
+        # can cancel every subsequent wait, including the execution lock.
+        state = self._states.pop(rid, None)
         self.scheduler.abort(rid)
-        await self._release_executor_requests([rid])
         if state is not None and not state.finished:
             output = self.output_processor.make_abort_output(state, reason)
             self.metrics.record_aborted(state)
-            self._states.pop(state.rid, None)
-            await state.queue.put(output)
+            state.queue.put_nowait(output)
+        await self._release_executor_requests([rid])
 
     def get_metrics_snapshot(self) -> dict[str, int | float]:
         snapshot = self.metrics.snapshot()
@@ -223,6 +231,8 @@ class AsyncLLM:
             except Exception as exc:  # noqa: BLE001
                 logger.exception("online generation batch failed")
                 for state in states:
+                    if self._states.get(state.rid) is not state or state.finished:
+                        continue
                     state.mark_execution_done()
                     await state.queue.put(
                         self.output_processor.make_error_output(state, str(exc))
@@ -359,7 +369,17 @@ class AsyncLLM:
     async def _release_executor_requests(self, request_ids) -> None:
         release = getattr(self.executor, "release_requests", None)
         if release is not None and request_ids and not self._closed:
-            await self._execute(release, request_ids)
+            # Keep ownership independent of the HTTP task's cancellation scope,
+            # including while the release is queued behind an active inference.
+            task = asyncio.create_task(self._execute(release, list(request_ids)))
+            self._release_tasks.add(task)
+            task.add_done_callback(self._release_done)
+            await asyncio.shield(task)
+
+    def _release_done(self, task: asyncio.Task) -> None:
+        self._release_tasks.discard(task)
+        if not task.cancelled() and (error := task.exception()) is not None:
+            logger.error("executor request release failed", exc_info=error)
 
     async def _fail_all_active(self, error: str) -> None:
         await self._fail_states(list(self._states.values()), error)

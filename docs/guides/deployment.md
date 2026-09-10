@@ -145,4 +145,10 @@ finish, even if its asyncio waiter was cancelled. Request release and executor
 cleanup share the same execution lock; the CLI retains an idempotent cleanup
 fallback.
 
+Client cancellation immediately removes the request from the scheduler and
+engine state and records its aborted result. Resource release runs in a tracked
+task protected from the HTTP caller's cancellation, still using the execution
+lock. Shutdown drains these pending releases before executor cleanup; release
+failures are logged even when the client has already disconnected.
+
 Validation results are recorded in [Docker deployment experiments](../experiments/docker-deployment.md).

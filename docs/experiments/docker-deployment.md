@@ -167,3 +167,31 @@ generate、分配和失效路径，覆盖 BF16/FP8、batch 8→2→8 的地址�
 这些回归不代表新增的 CUDA/NCCL 或完整模型验证。本轮未重建 Docker 镜像，也未重跑
 GPU 服务、质量或性能实验。上文 rootfs 和镜像归档是修复前的产物，部署本轮修复需从
 新提交重新构建镜像；此前的 GPU 运行结果不能作为本轮修复的实机验收。
+
+### AnyIO 客户端取消回归
+
+对 `dfceca4` 的后续 review 发现：客户端进入 AnyIO 取消作用域后，`abort()`
+等待执行锁时会再次被取消，导致 scheduler 已移除请求，但 `_states`、终止统计和
+executor 资源释放未完成。新增测试在修复前复现了残留状态及未执行的 release。
+
+修复后，逻辑终止、状态移除和 abort 输出入队在任何等待之前完成。资源释放交由
+引擎持有的独立任务，通过 shield 保护并继续遵守执行锁；服务关闭时等待所有此类
+任务结束，释放异常会记录日志。已取消请求的后续推理异常也不会重复计为失败。
+
+本轮相关 CPU 回归：**52 passed**（36.00 秒）。新增 AnyIO 取消作用域与真实推理线程
+测试覆盖推理正常返回、推理抛错、同时关闭服务及后台释放抛错。日志：
+`/data/fluxserve-cancellation-fix-20260910/cpu-tests.log`。
+
+```bash
+CUDA_VISIBLE_DEVICES='' PYTHONPATH=python:flux-kernel/python \
+  /tmp/fluxserve-pytest-venv/bin/python -m pytest -q \
+  test/runtime/test_request_cancellation.py \
+  test/runtime/test_offloaded_shutdown.py \
+  test/runtime/test_deployment.py \
+  test/runtime/test_engine_executor.py \
+  test/runtime/test_distributed_startup.py \
+  test/runtime/test_distributed_launch.py \
+  test/runtime/test_scheduler_defaults.py
+```
+
+本轮同样未重建 Docker 镜像或新增 GPU 实机验收。
