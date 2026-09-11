@@ -1,0 +1,10 @@
+{
+  "pid": 429528,
+  "started": "2026-09-11T10:04:06.774748+00:00",
+  "command": [
+    "/workspace/FluxServe/.venv/bin/python",
+    "-u",
+    "/workspace/FluxServe/runs/fa3-gsm8k/experiment.py",
+    "run"
+  ]
+}

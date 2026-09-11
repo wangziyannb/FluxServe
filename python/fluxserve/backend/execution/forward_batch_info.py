@@ -135,6 +135,8 @@ class RunnerConfig:
     mask_id: int = 156895
     eos_id: int = 156892
     attention_backend: str = "sdpa"
+    attention_compute_dtype: str = "bf16"
+    flashinfer_kernel_backend: str = "auto"
     flashinfer_decode_batch_mode: str = "max_batch"
     decode_cuda_graph_mode: str = "decomposed"
     cuda_graph_capture_batch_sizes: Sequence[int] | None = None
@@ -153,6 +155,19 @@ class RunnerConfig:
     stability_threshold: int | None = None
 
     def __post_init__(self):
+        if self.attention_compute_dtype not in {"bf16", "fp8"}:
+            raise ValueError("attention_compute_dtype must be 'bf16' or 'fp8'")
+        if self.flashinfer_kernel_backend not in {"auto", "fa2", "fa3"}:
+            raise ValueError("flashinfer_kernel_backend must be auto, fa2 or fa3")
+        if self.attention_compute_dtype == "fp8" and self.flashinfer_kernel_backend == "fa2":
+            raise ValueError("FP8 attention compute requires FA3")
+        if (self.attention_compute_dtype == "fp8" or self.flashinfer_kernel_backend != "auto") and (
+            self.attention_backend != "flashinfer"
+            or self.kv_cache_layout != "paged"
+            or self.flashinfer_cache_mode != "paged"
+            or self.flashinfer_prefill_mode != "paged"
+        ):
+            raise ValueError("Explicit FA2/FA3 or FP8 attention requires FlashInfer with paged prefill, cache and KV layout")
         if self.enable_cuda_graph:
             self.enable_prefill_cuda_graph = True
             self.enable_decode_cuda_graph = True

@@ -1,4 +1,4 @@
-"""Public FA2 wrappers for BF16 queries with scaled FP8 KV.
+"""FlashInfer adapters for scaled FP8 KV with BF16 or native FP8 compute.
 
 No dependency on flashinfer-dllm's same-dtype block-extend kernels. Workspaces
 are shared across layers; graph calls use wrappers planned by the graph runner.
@@ -26,7 +26,7 @@ def block_causal_mask(q_lens, kv_lens, q_offsets, kv_offsets, block_length, devi
 
 
 class _FA2State:
-    def __init__(self, device, paged):
+    def __init__(self, device, paged, native=False, block_backend=None):
         import flashinfer
 
         self.workspace = torch.empty(
@@ -37,7 +37,12 @@ class _FA2State:
             if paged
             else flashinfer.BatchPrefillWithRaggedKVCacheWrapper
         )
-        self.wrapper = cls(self.workspace, kv_layout="NHD", backend="fa2")
+        if block_backend:
+            from fluxserve.backend.layers.attention.native_fp8 import BlockPagedWrapper
+            self.wrapper = BlockPagedWrapper(self.workspace, backend=block_backend,
+                                            compute_dtype="fp8" if native else "bf16")
+        else:
+            self.wrapper = cls(self.workspace, kv_layout="NHD", backend="fa2")
         self.key = None
 
 
@@ -48,10 +53,10 @@ def clear_fp8_flashinfer_states():
     _STATES.clear()
 
 
-def _state(device, paged):
-    key = (str(device), paged)
+def _state(device, paged, native=False, block_backend=None):
+    key = (str(device), paged, native, block_backend)
     if key not in _STATES:
-        _STATES[key] = _FA2State(device, paged)
+        _STATES[key] = _FA2State(device, paged, native, block_backend)
     return _STATES[key]
 
 
@@ -74,8 +79,13 @@ def _unpack(output, q, lengths):
 
 
 class FP8FlashInferAttention:
-    def __init__(self, config):
+    def __init__(self, config, compute_dtype="bf16", *, kv_dtype=FP8_DTYPE, kernel_backend="auto"):
         self.config = config
+        self.native = compute_dtype == "fp8"
+        self.kv_dtype = kv_dtype
+        self.block_backend = ("fa3" if kernel_backend == "auto" else kernel_backend) if (
+            self.native or kv_dtype == torch.bfloat16
+        ) else None
 
     def _metadata(self, q, batch, prefill):
         q_lens = (
@@ -99,13 +109,13 @@ class FP8FlashInferAttention:
             )
         q_lens, kv_lens, offsets, kv_offsets = metadata
         block = int(batch.flashinfer_block_length or q.shape[2])
-        state = _state(q.device, paged)
+        state = _state(q.device, paged, self.native, self.block_backend)
         key = (
             metadata,
             block,
             page_size,
             q.dtype,
-            FP8_DTYPE,
+            self.kv_dtype,
             self.config.num_heads,
             self.config.num_kv_heads,
             self.config.head_dim,
@@ -117,6 +127,17 @@ class FP8FlashInferAttention:
         # Scheduler page tables can change even with identical lengths. When CPU
         # copies are absent, replan rather than reusing another request's pages.
         if state.key == key and (not paged or batch.flashinfer_paged_kv_indices_cpu):
+            return state.wrapper
+        if self.block_backend:
+            state.wrapper.plan(
+                metadata=metadata, kv_indptr=batch.flashinfer_kv_indptr,
+                kv_indices=batch.flashinfer_paged_kv_indices,
+                last_page_len=batch.flashinfer_paged_kv_last_page_len,
+                page_size=page_size, block_length=block,
+                num_qo_heads=self.config.num_heads, num_kv_heads=self.config.num_kv_heads,
+                head_dim=self.config.head_dim, sm_scale=self.config.scale,
+            )
+            state.key = key
             return state.wrapper
         mask = block_causal_mask(q_lens, kv_lens, offsets, kv_offsets, block, q.device)
         kwargs = dict(
@@ -149,22 +170,26 @@ class FP8FlashInferAttention:
     def forward_paged(self, q, k, v, past, batch, k_scale, v_scale):
         from flux_kernel.ops.kv_cache import quantize_scatter_kv
 
-        if past is None or any(t.dtype != FP8_DTYPE for t in past):
-            raise TypeError("FP8 paged attention requires FP8 KV pages")
+        if past is None or any(t.dtype != self.kv_dtype for t in past):
+            raise TypeError(f"Paged attention requires {self.kv_dtype} KV pages")
         if batch.flashinfer_slot_mapping is None:
             raise ValueError("FP8 paged attention requires slot_mapping")
         metadata = self._metadata(q, batch, batch.use_flashinfer_paged_prefill)
         lengths = metadata[0]
         slots = batch.flashinfer_slot_mapping.reshape(q.shape[0], -1)
         for i, length in enumerate(lengths):
-            quantize_scatter_kv(
-                k[i, :, :length],
-                v[i, :, :length],
-                past,
-                slots[i, :length],
-                k_scale,
-                v_scale,
-            )
+            if self.kv_dtype == FP8_DTYPE:
+                quantize_scatter_kv(
+                    k[i, :, :length], v[i, :, :length], past,
+                    slots[i, :length], k_scale, v_scale,
+                )
+            else:
+                # Identical BF16 cache writes for the explicit FA2/FA3 comparison.
+                page_size = int(past[0].shape[1])
+                row_slots = slots[i, :length].long()
+                pages, offsets = row_slots // page_size, row_slots % page_size
+                past[0][pages, offsets] = k[i, :, :length].transpose(0, 1)
+                past[1][pages, offsets] = v[i, :, :length].transpose(0, 1)
         packed_q = _pack(q, lengths)
         if batch.flashinfer_full_prefill_graph:
             output = batch.flashinfer_cuda_graph_runner.run_attention(

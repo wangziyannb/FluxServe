@@ -1,0 +1,975 @@
+[
+  {
+    "case": {
+      "weights": "fp8",
+      "kv": "fp8_e4m3",
+      "calibration": "ultrachat",
+      "gpus": 2,
+      "graph": false,
+      "name": "2gpu-fp8-compute-eager"
+    },
+    "compute": "fp8",
+    "status": "passed",
+    "metrics": {
+      "version": 1,
+      "kv_cache_dtype": "fp8_e4m3",
+      "timing": "synchronized_perf_counter_max_rank_per_batch",
+      "weight_format": "modelopt_fp8",
+      "num_hidden_layers": 32,
+      "kv_scale_source": "/workspace/FluxServe/runs/gsm8k-kv-calibration/scales-ultrachat.json",
+      "attention_backend": "flashinfer",
+      "attention_compute_dtype": "fp8",
+      "attention_kernel": "flashinfer-fa3-fp8",
+      "nfe": 858,
+      "generated_tokens": 5605,
+      "generation_seconds": 57.84970422415063,
+      "tps": 96.88900012837179,
+      "ranks": [
+        {
+          "rank": 0,
+          "local_generation_seconds": 57.84930974105373,
+          "parameter_bytes_by_dtype": {
+            "torch.bfloat16": 1997037568,
+            "torch.float8_e4m3fn": 50979667968,
+            "torch.float32": 64760
+          },
+          "kv_data_bytes": 536870912,
+          "graph_input_kv_bytes": 0,
+          "peak_allocated_bytes": 58572774912,
+          "peak_reserved_bytes": 67861741568,
+          "generic_graph_replays": 0,
+          "flashinfer_graph": {},
+          "flashinfer_graph_before_generation": {
+            "prefill": 0,
+            "decode": 0,
+            "gemma_decode": 0,
+            "invalidations": 0
+          },
+          "flashinfer_graph_during_generation": {
+            "prefill": 0,
+            "decode": 0,
+            "gemma_decode": 0,
+            "invalidations": 0
+          }
+        },
+        {
+          "rank": 1,
+          "local_generation_seconds": 57.84970422415063,
+          "parameter_bytes_by_dtype": {
+            "torch.bfloat16": 1997037568,
+            "torch.float8_e4m3fn": 50979667968,
+            "torch.float32": 64760
+          },
+          "kv_data_bytes": 536870912,
+          "graph_input_kv_bytes": 0,
+          "peak_allocated_bytes": 58572774912,
+          "peak_reserved_bytes": 67861741568,
+          "generic_graph_replays": 0,
+          "flashinfer_graph": {},
+          "flashinfer_graph_before_generation": {
+            "prefill": 0,
+            "decode": 0,
+            "gemma_decode": 0,
+            "invalidations": 0
+          },
+          "flashinfer_graph_during_generation": {
+            "prefill": 0,
+            "decode": 0,
+            "gemma_decode": 0,
+            "invalidations": 0
+          }
+        }
+      ],
+      "samples": 16,
+      "eos_missing": 0,
+      "outputs_with_masks": 0,
+      "output_sha256": "fa8c2867e88f92172bf4624012af7b4d754b3a944c533f55ebdd4c2fd4584c2c",
+      "tokens_per_forward": 6.532634032634032,
+      "returncode": 0,
+      "finished": "2026-09-11T09:26:06.745730+00:00",
+      "peak_device_used_bytes": {
+        "0": 69984059392,
+        "1": 69984059392
+      },
+      "gpu_process_ownership_method": "idle_boundaries_and_stable_exclusive_host_pid_per_gpu",
+      "observed_host_pids": {
+        "GPU-8b5f0306-a3c4-63cc-2e0b-83b2974e3ea3": "2639064",
+        "GPU-58c1c51a-9549-f2ef-112e-48da67910f44": "2639068"
+      },
+      "accuracy": 1.0,
+      "correct": 16,
+      "accuracy_wilson95": [
+        0.8063923194655637,
+        1.0000000000000002
+      ],
+      "extraction_failures": 0,
+      "evalscope_commit": "acd09b44384d53174768bb1063f675420f76fae9",
+      "evaluator": "GSM8KAdapter.extract_answer -> Accuracy(numeric=True); offline generated answers",
+      "gold_sha256": "f98f9902010cf84ce5046b8507e3f18ecbacce4e11492a03a9b05017a82dc4af"
+    }
+  },
+  {
+    "case": {
+      "weights": "fp8",
+      "kv": "fp8_e4m3",
+      "calibration": "ultrachat",
+      "gpus": 2,
+      "graph": true,
+      "name": "2gpu-fp8-compute-graph"
+    },
+    "compute": "fp8",
+    "status": "passed",
+    "metrics": {
+      "version": 1,
+      "kv_cache_dtype": "fp8_e4m3",
+      "timing": "synchronized_perf_counter_max_rank_per_batch",
+      "weight_format": "modelopt_fp8",
+      "num_hidden_layers": 32,
+      "kv_scale_source": "/workspace/FluxServe/runs/gsm8k-kv-calibration/scales-ultrachat.json",
+      "attention_backend": "flashinfer",
+      "attention_compute_dtype": "fp8",
+      "attention_kernel": "flashinfer-fa3-fp8",
+      "nfe": 1854,
+      "generated_tokens": 7071,
+      "generation_seconds": 32.204880378209054,
+      "tps": 219.56299532739408,
+      "ranks": [
+        {
+          "rank": 0,
+          "local_generation_seconds": 32.20487340306863,
+          "parameter_bytes_by_dtype": {
+            "torch.bfloat16": 1997037568,
+            "torch.float8_e4m3fn": 50979667968,
+            "torch.float32": 64760
+          },
+          "kv_data_bytes": 553648128,
+          "graph_input_kv_bytes": 0,
+          "peak_allocated_bytes": 58283364864,
+          "peak_reserved_bytes": 64195919872,
+          "generic_graph_replays": 0,
+          "flashinfer_graph": {
+            "prefill_capture_count": 0,
+            "prefill_replay_count": 0,
+            "prefill_fallback_count": 4,
+            "decode_capture_count": 3,
+            "decode_replay_count": 1850,
+            "decode_decomposed_plan_count": 36,
+            "decode_component_replay_count": 1850,
+            "decode_fallback_count": 0,
+            "gemma_decode_capture_count": 0,
+            "gemma_decode_replay_count": 0,
+            "gemma_decode_fallback_count": 0,
+            "gemma_decode_entry_count": 0,
+            "gemma_decode_max_entries": 0,
+            "invalidation_count": 0,
+            "llada2_invalidation_count": 0,
+            "gemma_invalidation_count": 0,
+            "capture_time_s": 2.281111665070057e-05,
+            "memory_allocated_bytes": 53948656640,
+            "memory_reserved_bytes": 64195919872,
+            "decode_capture_bs_1": 1,
+            "decode_replay_bs_1": 1200,
+            "decode_capture_bs_2": 1,
+            "decode_replay_bs_2": 73,
+            "decode_capture_bs_4": 1,
+            "decode_replay_bs_4": 577
+          },
+          "flashinfer_graph_before_generation": {
+            "prefill": 0,
+            "decode": 3,
+            "gemma_decode": 0,
+            "invalidations": 0
+          },
+          "flashinfer_graph_during_generation": {
+            "prefill": 0,
+            "decode": 0,
+            "gemma_decode": 0,
+            "invalidations": 0
+          }
+        },
+        {
+          "rank": 1,
+          "local_generation_seconds": 32.204864954110235,
+          "parameter_bytes_by_dtype": {
+            "torch.bfloat16": 1997037568,
+            "torch.float8_e4m3fn": 50979667968,
+            "torch.float32": 64760
+          },
+          "kv_data_bytes": 553648128,
+          "graph_input_kv_bytes": 0,
+          "peak_allocated_bytes": 58283364864,
+          "peak_reserved_bytes": 64195919872,
+          "generic_graph_replays": 0,
+          "flashinfer_graph": {
+            "prefill_capture_count": 0,
+            "prefill_replay_count": 0,
+            "prefill_fallback_count": 4,
+            "decode_capture_count": 3,
+            "decode_replay_count": 1850,
+            "decode_decomposed_plan_count": 36,
+            "decode_component_replay_count": 1850,
+            "decode_fallback_count": 0,
+            "gemma_decode_capture_count": 0,
+            "gemma_decode_replay_count": 0,
+            "gemma_decode_fallback_count": 0,
+            "gemma_decode_entry_count": 0,
+            "gemma_decode_max_entries": 0,
+            "invalidation_count": 0,
+            "llada2_invalidation_count": 0,
+            "gemma_invalidation_count": 0,
+            "capture_time_s": 2.2731022909283638e-05,
+            "memory_allocated_bytes": 53948656640,
+            "memory_reserved_bytes": 64195919872,
+            "decode_capture_bs_1": 1,
+            "decode_replay_bs_1": 1200,
+            "decode_capture_bs_2": 1,
+            "decode_replay_bs_2": 73,
+            "decode_capture_bs_4": 1,
+            "decode_replay_bs_4": 577
+          },
+          "flashinfer_graph_before_generation": {
+            "prefill": 0,
+            "decode": 3,
+            "gemma_decode": 0,
+            "invalidations": 0
+          },
+          "flashinfer_graph_during_generation": {
+            "prefill": 0,
+            "decode": 0,
+            "gemma_decode": 0,
+            "invalidations": 0
+          }
+        }
+      ],
+      "samples": 16,
+      "eos_missing": 1,
+      "outputs_with_masks": 0,
+      "output_sha256": "214bab61ecc7fb18dbeebdabd0ac98f7effa17bf9279d6fc9b5bbe52334c698b",
+      "tokens_per_forward": 3.813915857605178,
+      "returncode": 0,
+      "finished": "2026-09-11T09:27:16.972116+00:00",
+      "peak_device_used_bytes": {
+        "0": 66362277888,
+        "1": 66362277888
+      },
+      "gpu_process_ownership_method": "idle_boundaries_and_stable_exclusive_host_pid_per_gpu",
+      "observed_host_pids": {
+        "GPU-8b5f0306-a3c4-63cc-2e0b-83b2974e3ea3": "2651018",
+        "GPU-58c1c51a-9549-f2ef-112e-48da67910f44": "2651019"
+      },
+      "accuracy": 0.9375,
+      "correct": 15,
+      "accuracy_wilson95": [
+        0.7167126242970107,
+        0.9888806552353576
+      ],
+      "extraction_failures": 0,
+      "evalscope_commit": "acd09b44384d53174768bb1063f675420f76fae9",
+      "evaluator": "GSM8KAdapter.extract_answer -> Accuracy(numeric=True); offline generated answers",
+      "gold_sha256": "f98f9902010cf84ce5046b8507e3f18ecbacce4e11492a03a9b05017a82dc4af"
+    }
+  },
+  {
+    "case": {
+      "weights": "fp8",
+      "kv": "fp8_e4m3",
+      "calibration": "ultrachat",
+      "gpus": 2,
+      "graph": true,
+      "name": "2gpu-bf16-compute-graph"
+    },
+    "compute": "bf16",
+    "status": "passed",
+    "metrics": {
+      "version": 1,
+      "kv_cache_dtype": "fp8_e4m3",
+      "timing": "synchronized_perf_counter_max_rank_per_batch",
+      "weight_format": "modelopt_fp8",
+      "num_hidden_layers": 32,
+      "kv_scale_source": "/workspace/FluxServe/runs/gsm8k-kv-calibration/scales-ultrachat.json",
+      "attention_backend": "flashinfer",
+      "attention_compute_dtype": "bf16",
+      "attention_kernel": "flashinfer-fa2-fp8-kv",
+      "nfe": 1415,
+      "generated_tokens": 6638,
+      "generation_seconds": 50.76202599867247,
+      "tps": 130.7670422802588,
+      "ranks": [
+        {
+          "rank": 0,
+          "local_generation_seconds": 50.76202599867247,
+          "parameter_bytes_by_dtype": {
+            "torch.bfloat16": 1997037568,
+            "torch.float8_e4m3fn": 50979667968,
+            "torch.float32": 64760
+          },
+          "kv_data_bytes": 553648128,
+          "graph_input_kv_bytes": 0,
+          "peak_allocated_bytes": 58283725312,
+          "peak_reserved_bytes": 64195919872,
+          "generic_graph_replays": 0,
+          "flashinfer_graph": {
+            "prefill_capture_count": 0,
+            "prefill_replay_count": 0,
+            "prefill_fallback_count": 4,
+            "decode_capture_count": 3,
+            "decode_replay_count": 1411,
+            "decode_decomposed_plan_count": 10,
+            "decode_component_replay_count": 1411,
+            "decode_fallback_count": 0,
+            "gemma_decode_capture_count": 0,
+            "gemma_decode_replay_count": 0,
+            "gemma_decode_fallback_count": 0,
+            "gemma_decode_entry_count": 0,
+            "gemma_decode_max_entries": 0,
+            "invalidation_count": 0,
+            "llada2_invalidation_count": 0,
+            "gemma_invalidation_count": 0,
+            "capture_time_s": 2.4892855435609818e-05,
+            "memory_allocated_bytes": 53949019136,
+            "memory_reserved_bytes": 64195919872,
+            "decode_capture_bs_1": 1,
+            "decode_replay_bs_1": 736,
+            "decode_capture_bs_2": 1,
+            "decode_replay_bs_2": 112,
+            "decode_capture_bs_4": 1,
+            "decode_replay_bs_4": 563
+          },
+          "flashinfer_graph_before_generation": {
+            "prefill": 0,
+            "decode": 3,
+            "gemma_decode": 0,
+            "invalidations": 0
+          },
+          "flashinfer_graph_during_generation": {
+            "prefill": 0,
+            "decode": 0,
+            "gemma_decode": 0,
+            "invalidations": 0
+          }
+        },
+        {
+          "rank": 1,
+          "local_generation_seconds": 50.762003768002614,
+          "parameter_bytes_by_dtype": {
+            "torch.bfloat16": 1997037568,
+            "torch.float8_e4m3fn": 50979667968,
+            "torch.float32": 64760
+          },
+          "kv_data_bytes": 553648128,
+          "graph_input_kv_bytes": 0,
+          "peak_allocated_bytes": 58283725312,
+          "peak_reserved_bytes": 64195919872,
+          "generic_graph_replays": 0,
+          "flashinfer_graph": {
+            "prefill_capture_count": 0,
+            "prefill_replay_count": 0,
+            "prefill_fallback_count": 4,
+            "decode_capture_count": 3,
+            "decode_replay_count": 1411,
+            "decode_decomposed_plan_count": 10,
+            "decode_component_replay_count": 1411,
+            "decode_fallback_count": 0,
+            "gemma_decode_capture_count": 0,
+            "gemma_decode_replay_count": 0,
+            "gemma_decode_fallback_count": 0,
+            "gemma_decode_entry_count": 0,
+            "gemma_decode_max_entries": 0,
+            "invalidation_count": 0,
+            "llada2_invalidation_count": 0,
+            "gemma_invalidation_count": 0,
+            "capture_time_s": 2.301088534295559e-05,
+            "memory_allocated_bytes": 53949019136,
+            "memory_reserved_bytes": 64195919872,
+            "decode_capture_bs_1": 1,
+            "decode_replay_bs_1": 736,
+            "decode_capture_bs_2": 1,
+            "decode_replay_bs_2": 112,
+            "decode_capture_bs_4": 1,
+            "decode_replay_bs_4": 563
+          },
+          "flashinfer_graph_before_generation": {
+            "prefill": 0,
+            "decode": 3,
+            "gemma_decode": 0,
+            "invalidations": 0
+          },
+          "flashinfer_graph_during_generation": {
+            "prefill": 0,
+            "decode": 0,
+            "gemma_decode": 0,
+            "invalidations": 0
+          }
+        }
+      ],
+      "samples": 16,
+      "eos_missing": 0,
+      "outputs_with_masks": 0,
+      "output_sha256": "e9e81a3661ec4b858ecce392285ab7661d236ee237d5cef2f7a4c55e18c6757a",
+      "tokens_per_forward": 4.691166077738516,
+      "returncode": 0,
+      "finished": "2026-09-11T09:28:45.902445+00:00",
+      "peak_device_used_bytes": {
+        "0": 66362277888,
+        "1": 66362277888
+      },
+      "gpu_process_ownership_method": "idle_boundaries_and_stable_exclusive_host_pid_per_gpu",
+      "observed_host_pids": {
+        "GPU-8b5f0306-a3c4-63cc-2e0b-83b2974e3ea3": "2653288",
+        "GPU-58c1c51a-9549-f2ef-112e-48da67910f44": "2653289"
+      },
+      "accuracy": 1.0,
+      "correct": 16,
+      "accuracy_wilson95": [
+        0.8063923194655637,
+        1.0000000000000002
+      ],
+      "extraction_failures": 0,
+      "evalscope_commit": "acd09b44384d53174768bb1063f675420f76fae9",
+      "evaluator": "GSM8KAdapter.extract_answer -> Accuracy(numeric=True); offline generated answers",
+      "gold_sha256": "f98f9902010cf84ce5046b8507e3f18ecbacce4e11492a03a9b05017a82dc4af"
+    }
+  },
+  {
+    "case": {
+      "weights": "fp8",
+      "kv": "fp8_e4m3",
+      "calibration": "ultrachat",
+      "gpus": 4,
+      "graph": true,
+      "name": "4gpu-fp8-compute-graph"
+    },
+    "compute": "fp8",
+    "status": "passed",
+    "metrics": {
+      "version": 1,
+      "kv_cache_dtype": "fp8_e4m3",
+      "timing": "synchronized_perf_counter_max_rank_per_batch",
+      "weight_format": "modelopt_fp8",
+      "num_hidden_layers": 32,
+      "kv_scale_source": "/workspace/FluxServe/runs/gsm8k-kv-calibration/scales-ultrachat.json",
+      "attention_backend": "flashinfer",
+      "attention_compute_dtype": "fp8",
+      "attention_kernel": "flashinfer-fa3-fp8",
+      "nfe": 803,
+      "generated_tokens": 5344,
+      "generation_seconds": 13.554390862118453,
+      "tps": 394.2633833096334,
+      "ranks": [
+        {
+          "rank": 0,
+          "local_generation_seconds": 13.554143036250025,
+          "parameter_bytes_by_dtype": {
+            "torch.bfloat16": 1031299072,
+            "torch.float8_e4m3fn": 25684869120,
+            "torch.float32": 48888
+          },
+          "kv_data_bytes": 276824064,
+          "graph_input_kv_bytes": 0,
+          "peak_allocated_bytes": 31723967488,
+          "peak_reserved_bytes": 36828086272,
+          "generic_graph_replays": 0,
+          "flashinfer_graph": {
+            "prefill_capture_count": 0,
+            "prefill_replay_count": 0,
+            "prefill_fallback_count": 4,
+            "decode_capture_count": 3,
+            "decode_replay_count": 799,
+            "decode_decomposed_plan_count": 48,
+            "decode_component_replay_count": 799,
+            "decode_fallback_count": 0,
+            "gemma_decode_capture_count": 0,
+            "gemma_decode_replay_count": 0,
+            "gemma_decode_fallback_count": 0,
+            "gemma_decode_entry_count": 0,
+            "gemma_decode_max_entries": 0,
+            "invalidation_count": 0,
+            "llada2_invalidation_count": 0,
+            "gemma_invalidation_count": 0,
+            "capture_time_s": 2.201204188168049e-05,
+            "memory_allocated_bytes": 27416522240,
+            "memory_reserved_bytes": 36828086272,
+            "decode_capture_bs_1": 1,
+            "decode_replay_bs_1": 148,
+            "decode_capture_bs_2": 1,
+            "decode_replay_bs_2": 68,
+            "decode_capture_bs_4": 1,
+            "decode_replay_bs_4": 583
+          },
+          "flashinfer_graph_before_generation": {
+            "prefill": 0,
+            "decode": 3,
+            "gemma_decode": 0,
+            "invalidations": 0
+          },
+          "flashinfer_graph_during_generation": {
+            "prefill": 0,
+            "decode": 0,
+            "gemma_decode": 0,
+            "invalidations": 0
+          }
+        },
+        {
+          "rank": 1,
+          "local_generation_seconds": 13.554376499028876,
+          "parameter_bytes_by_dtype": {
+            "torch.bfloat16": 1031299072,
+            "torch.float8_e4m3fn": 25684869120,
+            "torch.float32": 48888
+          },
+          "kv_data_bytes": 276824064,
+          "graph_input_kv_bytes": 0,
+          "peak_allocated_bytes": 31723967488,
+          "peak_reserved_bytes": 36828086272,
+          "generic_graph_replays": 0,
+          "flashinfer_graph": {
+            "prefill_capture_count": 0,
+            "prefill_replay_count": 0,
+            "prefill_fallback_count": 4,
+            "decode_capture_count": 3,
+            "decode_replay_count": 799,
+            "decode_decomposed_plan_count": 48,
+            "decode_component_replay_count": 799,
+            "decode_fallback_count": 0,
+            "gemma_decode_capture_count": 0,
+            "gemma_decode_replay_count": 0,
+            "gemma_decode_fallback_count": 0,
+            "gemma_decode_entry_count": 0,
+            "gemma_decode_max_entries": 0,
+            "invalidation_count": 0,
+            "llada2_invalidation_count": 0,
+            "gemma_invalidation_count": 0,
+            "capture_time_s": 2.1401094272732735e-05,
+            "memory_allocated_bytes": 27416522240,
+            "memory_reserved_bytes": 36828086272,
+            "decode_capture_bs_1": 1,
+            "decode_replay_bs_1": 148,
+            "decode_capture_bs_2": 1,
+            "decode_replay_bs_2": 68,
+            "decode_capture_bs_4": 1,
+            "decode_replay_bs_4": 583
+          },
+          "flashinfer_graph_before_generation": {
+            "prefill": 0,
+            "decode": 3,
+            "gemma_decode": 0,
+            "invalidations": 0
+          },
+          "flashinfer_graph_during_generation": {
+            "prefill": 0,
+            "decode": 0,
+            "gemma_decode": 0,
+            "invalidations": 0
+          }
+        },
+        {
+          "rank": 2,
+          "local_generation_seconds": 13.554252533940598,
+          "parameter_bytes_by_dtype": {
+            "torch.bfloat16": 1031299072,
+            "torch.float8_e4m3fn": 25684869120,
+            "torch.float32": 48888
+          },
+          "kv_data_bytes": 276824064,
+          "graph_input_kv_bytes": 0,
+          "peak_allocated_bytes": 31723967488,
+          "peak_reserved_bytes": 36828086272,
+          "generic_graph_replays": 0,
+          "flashinfer_graph": {
+            "prefill_capture_count": 0,
+            "prefill_replay_count": 0,
+            "prefill_fallback_count": 4,
+            "decode_capture_count": 3,
+            "decode_replay_count": 799,
+            "decode_decomposed_plan_count": 48,
+            "decode_component_replay_count": 799,
+            "decode_fallback_count": 0,
+            "gemma_decode_capture_count": 0,
+            "gemma_decode_replay_count": 0,
+            "gemma_decode_fallback_count": 0,
+            "gemma_decode_entry_count": 0,
+            "gemma_decode_max_entries": 0,
+            "invalidation_count": 0,
+            "llada2_invalidation_count": 0,
+            "gemma_invalidation_count": 0,
+            "capture_time_s": 2.4865148589015007e-05,
+            "memory_allocated_bytes": 27416522240,
+            "memory_reserved_bytes": 36828086272,
+            "decode_capture_bs_1": 1,
+            "decode_replay_bs_1": 148,
+            "decode_capture_bs_2": 1,
+            "decode_replay_bs_2": 68,
+            "decode_capture_bs_4": 1,
+            "decode_replay_bs_4": 583
+          },
+          "flashinfer_graph_before_generation": {
+            "prefill": 0,
+            "decode": 3,
+            "gemma_decode": 0,
+            "invalidations": 0
+          },
+          "flashinfer_graph_during_generation": {
+            "prefill": 0,
+            "decode": 0,
+            "gemma_decode": 0,
+            "invalidations": 0
+          }
+        },
+        {
+          "rank": 3,
+          "local_generation_seconds": 13.554386999225244,
+          "parameter_bytes_by_dtype": {
+            "torch.bfloat16": 1031299072,
+            "torch.float8_e4m3fn": 25684869120,
+            "torch.float32": 48888
+          },
+          "kv_data_bytes": 276824064,
+          "graph_input_kv_bytes": 0,
+          "peak_allocated_bytes": 31723967488,
+          "peak_reserved_bytes": 36828086272,
+          "generic_graph_replays": 0,
+          "flashinfer_graph": {
+            "prefill_capture_count": 0,
+            "prefill_replay_count": 0,
+            "prefill_fallback_count": 4,
+            "decode_capture_count": 3,
+            "decode_replay_count": 799,
+            "decode_decomposed_plan_count": 48,
+            "decode_component_replay_count": 799,
+            "decode_fallback_count": 0,
+            "gemma_decode_capture_count": 0,
+            "gemma_decode_replay_count": 0,
+            "gemma_decode_fallback_count": 0,
+            "gemma_decode_entry_count": 0,
+            "gemma_decode_max_entries": 0,
+            "invalidation_count": 0,
+            "llada2_invalidation_count": 0,
+            "gemma_invalidation_count": 0,
+            "capture_time_s": 2.1177809685468674e-05,
+            "memory_allocated_bytes": 27416522240,
+            "memory_reserved_bytes": 36828086272,
+            "decode_capture_bs_1": 1,
+            "decode_replay_bs_1": 148,
+            "decode_capture_bs_2": 1,
+            "decode_replay_bs_2": 68,
+            "decode_capture_bs_4": 1,
+            "decode_replay_bs_4": 583
+          },
+          "flashinfer_graph_before_generation": {
+            "prefill": 0,
+            "decode": 3,
+            "gemma_decode": 0,
+            "invalidations": 0
+          },
+          "flashinfer_graph_during_generation": {
+            "prefill": 0,
+            "decode": 0,
+            "gemma_decode": 0,
+            "invalidations": 0
+          }
+        }
+      ],
+      "samples": 16,
+      "eos_missing": 0,
+      "outputs_with_masks": 0,
+      "output_sha256": "996efb05cb32b11f77e7e110307ef46f577ed10cf1324d9bbb2a52e04bfda98b",
+      "tokens_per_forward": 6.655043586550436,
+      "returncode": 0,
+      "finished": "2026-09-11T09:29:33.745289+00:00",
+      "peak_device_used_bytes": {
+        "0": 39101399040,
+        "1": 39101399040,
+        "2": 39101399040,
+        "3": 39101399040
+      },
+      "gpu_process_ownership_method": "idle_boundaries_and_stable_exclusive_host_pid_per_gpu",
+      "observed_host_pids": {
+        "GPU-8b5f0306-a3c4-63cc-2e0b-83b2974e3ea3": "2657166",
+        "GPU-58c1c51a-9549-f2ef-112e-48da67910f44": "2657167",
+        "GPU-51834abf-2291-d6cd-966b-e603a29182d6": "2657168",
+        "GPU-26cd954c-8fe4-ec78-027b-ec7eca116003": "2657169"
+      },
+      "accuracy": 0.9375,
+      "correct": 15,
+      "accuracy_wilson95": [
+        0.7167126242970107,
+        0.9888806552353576
+      ],
+      "extraction_failures": 0,
+      "evalscope_commit": "acd09b44384d53174768bb1063f675420f76fae9",
+      "evaluator": "GSM8KAdapter.extract_answer -> Accuracy(numeric=True); offline generated answers",
+      "gold_sha256": "f98f9902010cf84ce5046b8507e3f18ecbacce4e11492a03a9b05017a82dc4af"
+    }
+  },
+  {
+    "case": {
+      "weights": "fp8",
+      "kv": "fp8_e4m3",
+      "calibration": "ultrachat",
+      "gpus": 4,
+      "graph": true,
+      "name": "4gpu-bf16-compute-graph"
+    },
+    "compute": "bf16",
+    "status": "passed",
+    "metrics": {
+      "version": 1,
+      "kv_cache_dtype": "fp8_e4m3",
+      "timing": "synchronized_perf_counter_max_rank_per_batch",
+      "weight_format": "modelopt_fp8",
+      "num_hidden_layers": 32,
+      "kv_scale_source": "/workspace/FluxServe/runs/gsm8k-kv-calibration/scales-ultrachat.json",
+      "attention_backend": "flashinfer",
+      "attention_compute_dtype": "bf16",
+      "attention_kernel": "flashinfer-fa2-fp8-kv",
+      "nfe": 1949,
+      "generated_tokens": 6975,
+      "generation_seconds": 61.60213032201864,
+      "tps": 113.22660374793735,
+      "ranks": [
+        {
+          "rank": 0,
+          "local_generation_seconds": 61.60209885891527,
+          "parameter_bytes_by_dtype": {
+            "torch.bfloat16": 1031299072,
+            "torch.float8_e4m3fn": 25684869120,
+            "torch.float32": 48888
+          },
+          "kv_data_bytes": 276824064,
+          "graph_input_kv_bytes": 0,
+          "peak_allocated_bytes": 31724327936,
+          "peak_reserved_bytes": 36828086272,
+          "generic_graph_replays": 0,
+          "flashinfer_graph": {
+            "prefill_capture_count": 0,
+            "prefill_replay_count": 0,
+            "prefill_fallback_count": 4,
+            "decode_capture_count": 3,
+            "decode_replay_count": 1945,
+            "decode_decomposed_plan_count": 26,
+            "decode_component_replay_count": 1945,
+            "decode_fallback_count": 0,
+            "gemma_decode_capture_count": 0,
+            "gemma_decode_replay_count": 0,
+            "gemma_decode_fallback_count": 0,
+            "gemma_decode_entry_count": 0,
+            "gemma_decode_max_entries": 0,
+            "invalidation_count": 0,
+            "llada2_invalidation_count": 0,
+            "gemma_invalidation_count": 0,
+            "capture_time_s": 2.7507077902555466e-05,
+            "memory_allocated_bytes": 27416884736,
+            "memory_reserved_bytes": 36828086272,
+            "decode_capture_bs_1": 1,
+            "decode_replay_bs_1": 1317,
+            "decode_capture_bs_2": 1,
+            "decode_replay_bs_2": 70,
+            "decode_capture_bs_4": 1,
+            "decode_replay_bs_4": 558
+          },
+          "flashinfer_graph_before_generation": {
+            "prefill": 0,
+            "decode": 3,
+            "gemma_decode": 0,
+            "invalidations": 0
+          },
+          "flashinfer_graph_during_generation": {
+            "prefill": 0,
+            "decode": 0,
+            "gemma_decode": 0,
+            "invalidations": 0
+          }
+        },
+        {
+          "rank": 1,
+          "local_generation_seconds": 61.60208688094281,
+          "parameter_bytes_by_dtype": {
+            "torch.bfloat16": 1031299072,
+            "torch.float8_e4m3fn": 25684869120,
+            "torch.float32": 48888
+          },
+          "kv_data_bytes": 276824064,
+          "graph_input_kv_bytes": 0,
+          "peak_allocated_bytes": 31724327936,
+          "peak_reserved_bytes": 36828086272,
+          "generic_graph_replays": 0,
+          "flashinfer_graph": {
+            "prefill_capture_count": 0,
+            "prefill_replay_count": 0,
+            "prefill_fallback_count": 4,
+            "decode_capture_count": 3,
+            "decode_replay_count": 1945,
+            "decode_decomposed_plan_count": 26,
+            "decode_component_replay_count": 1945,
+            "decode_fallback_count": 0,
+            "gemma_decode_capture_count": 0,
+            "gemma_decode_replay_count": 0,
+            "gemma_decode_fallback_count": 0,
+            "gemma_decode_entry_count": 0,
+            "gemma_decode_max_entries": 0,
+            "invalidation_count": 0,
+            "llada2_invalidation_count": 0,
+            "gemma_invalidation_count": 0,
+            "capture_time_s": 2.598995342850685e-05,
+            "memory_allocated_bytes": 27416884736,
+            "memory_reserved_bytes": 36828086272,
+            "decode_capture_bs_1": 1,
+            "decode_replay_bs_1": 1317,
+            "decode_capture_bs_2": 1,
+            "decode_replay_bs_2": 70,
+            "decode_capture_bs_4": 1,
+            "decode_replay_bs_4": 558
+          },
+          "flashinfer_graph_before_generation": {
+            "prefill": 0,
+            "decode": 3,
+            "gemma_decode": 0,
+            "invalidations": 0
+          },
+          "flashinfer_graph_during_generation": {
+            "prefill": 0,
+            "decode": 0,
+            "gemma_decode": 0,
+            "invalidations": 0
+          }
+        },
+        {
+          "rank": 2,
+          "local_generation_seconds": 61.602105770027265,
+          "parameter_bytes_by_dtype": {
+            "torch.bfloat16": 1031299072,
+            "torch.float8_e4m3fn": 25684869120,
+            "torch.float32": 48888
+          },
+          "kv_data_bytes": 276824064,
+          "graph_input_kv_bytes": 0,
+          "peak_allocated_bytes": 31724327936,
+          "peak_reserved_bytes": 36828086272,
+          "generic_graph_replays": 0,
+          "flashinfer_graph": {
+            "prefill_capture_count": 0,
+            "prefill_replay_count": 0,
+            "prefill_fallback_count": 4,
+            "decode_capture_count": 3,
+            "decode_replay_count": 1945,
+            "decode_decomposed_plan_count": 26,
+            "decode_component_replay_count": 1945,
+            "decode_fallback_count": 0,
+            "gemma_decode_capture_count": 0,
+            "gemma_decode_replay_count": 0,
+            "gemma_decode_fallback_count": 0,
+            "gemma_decode_entry_count": 0,
+            "gemma_decode_max_entries": 0,
+            "invalidation_count": 0,
+            "llada2_invalidation_count": 0,
+            "gemma_invalidation_count": 0,
+            "capture_time_s": 2.370099537074566e-05,
+            "memory_allocated_bytes": 27416884736,
+            "memory_reserved_bytes": 36828086272,
+            "decode_capture_bs_1": 1,
+            "decode_replay_bs_1": 1317,
+            "decode_capture_bs_2": 1,
+            "decode_replay_bs_2": 70,
+            "decode_capture_bs_4": 1,
+            "decode_replay_bs_4": 558
+          },
+          "flashinfer_graph_before_generation": {
+            "prefill": 0,
+            "decode": 3,
+            "gemma_decode": 0,
+            "invalidations": 0
+          },
+          "flashinfer_graph_during_generation": {
+            "prefill": 0,
+            "decode": 0,
+            "gemma_decode": 0,
+            "invalidations": 0
+          }
+        },
+        {
+          "rank": 3,
+          "local_generation_seconds": 61.6021240351256,
+          "parameter_bytes_by_dtype": {
+            "torch.bfloat16": 1031299072,
+            "torch.float8_e4m3fn": 25684869120,
+            "torch.float32": 48888
+          },
+          "kv_data_bytes": 276824064,
+          "graph_input_kv_bytes": 0,
+          "peak_allocated_bytes": 31724327936,
+          "peak_reserved_bytes": 36828086272,
+          "generic_graph_replays": 0,
+          "flashinfer_graph": {
+            "prefill_capture_count": 0,
+            "prefill_replay_count": 0,
+            "prefill_fallback_count": 4,
+            "decode_capture_count": 3,
+            "decode_replay_count": 1945,
+            "decode_decomposed_plan_count": 26,
+            "decode_component_replay_count": 1945,
+            "decode_fallback_count": 0,
+            "gemma_decode_capture_count": 0,
+            "gemma_decode_replay_count": 0,
+            "gemma_decode_fallback_count": 0,
+            "gemma_decode_entry_count": 0,
+            "gemma_decode_max_entries": 0,
+            "invalidation_count": 0,
+            "llada2_invalidation_count": 0,
+            "gemma_invalidation_count": 0,
+            "capture_time_s": 2.202112227678299e-05,
+            "memory_allocated_bytes": 27416884736,
+            "memory_reserved_bytes": 36828086272,
+            "decode_capture_bs_1": 1,
+            "decode_replay_bs_1": 1317,
+            "decode_capture_bs_2": 1,
+            "decode_replay_bs_2": 70,
+            "decode_capture_bs_4": 1,
+            "decode_replay_bs_4": 558
+          },
+          "flashinfer_graph_before_generation": {
+            "prefill": 0,
+            "decode": 3,
+            "gemma_decode": 0,
+            "invalidations": 0
+          },
+          "flashinfer_graph_during_generation": {
+            "prefill": 0,
+            "decode": 0,
+            "gemma_decode": 0,
+            "invalidations": 0
+          }
+        }
+      ],
+      "samples": 16,
+      "eos_missing": 1,
+      "outputs_with_masks": 0,
+      "output_sha256": "0b759691d5e63356a2e4c0aeb9f8242a9c75a877a3d2e3a7d711b667b2682a4f",
+      "tokens_per_forward": 3.57875833760903,
+      "returncode": 0,
+      "finished": "2026-09-11T09:31:08.273166+00:00",
+      "peak_device_used_bytes": {
+        "0": 39101399040,
+        "1": 39101399040,
+        "2": 39101399040,
+        "3": 39101399040
+      },
+      "gpu_process_ownership_method": "idle_boundaries_and_stable_exclusive_host_pid_per_gpu",
+      "observed_host_pids": {
+        "GPU-8b5f0306-a3c4-63cc-2e0b-83b2974e3ea3": "2659386",
+        "GPU-58c1c51a-9549-f2ef-112e-48da67910f44": "2659387",
+        "GPU-51834abf-2291-d6cd-966b-e603a29182d6": "2659388",
+        "GPU-26cd954c-8fe4-ec78-027b-ec7eca116003": "2659389"
+      },
+      "accuracy": 1.0,
+      "correct": 16,
+      "accuracy_wilson95": [
+        0.8063923194655637,
+        1.0000000000000002
+      ],
+      "extraction_failures": 0,
+      "evalscope_commit": "acd09b44384d53174768bb1063f675420f76fae9",
+      "evaluator": "GSM8KAdapter.extract_answer -> Accuracy(numeric=True); offline generated answers",
+      "gold_sha256": "f98f9902010cf84ce5046b8507e3f18ecbacce4e11492a03a9b05017a82dc4af"
+    }
+  }
+]

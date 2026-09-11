@@ -1,0 +1,31 @@
+{
+  "status": "passed",
+  "checked_at": "2026-09-11T18:11:07.051176+00:00",
+  "runtime_source_files_matching_experiment": 138,
+  "runtime_sources_changed": [],
+  "regression_tests": {
+    "passed": 83,
+    "record": "tests.log",
+    "rerun_for_publication": false,
+    "note": "Runtime source unchanged since the successful preflight and full experiments."
+  },
+  "archive_verification_command": "python runs/fa3-gsm8k/verify_records.py",
+  "archives_verified": [
+    "runs/fa3-gsm8k/records.tar.gz",
+    "runs/fp8-attention/records.tar.gz"
+  ],
+  "all_archived_member_hashes_verified": true,
+  "combined_formal_rows_verified": 20,
+  "formal_runs_verified": 10,
+  "smoke_runs_verified": 10,
+  "python_syntax_checked_files": 16,
+  "report_local_links_checked": true,
+  "git_diff_check": {
+    "source_and_documentation": "passed",
+    "command": "git diff --cached --check -- docs python flux-kernel test",
+    "preserved_artifact_whitespace": {
+      "csv": "Original standard CSV CRLF line endings preserved.",
+      "source.patch": "Original unified diff blank context lines preserved."
+    }
+  }
+}

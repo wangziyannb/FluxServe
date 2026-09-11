@@ -1,0 +1,9 @@
+........................................................................ [ 86%]
+...........                                                              [100%]
+=============================== warnings summary ===============================
+test/runtime/test_native_fp8_attention_cuda.py::test_fp8_paged_prefill_offsets_partial_pages_and_gqa[32-4-128]
+  /workspace/FluxServe/.venv/lib/python3.12/site-packages/flashinfer/cute_dsl/utils.py:112: DeprecationWarning: Arch from arch.py is deprecated. Use Arch from enums.py instead.
+    from cutlass.base_dsl.arch import Arch
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+83 passed, 1 warning in 225.32s (0:03:45)

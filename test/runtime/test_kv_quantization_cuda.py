@@ -253,16 +253,17 @@ def test_flashinfer_paged_partial_prompt_and_ragged(layer, dtype):
 
 
 @pytest.mark.parametrize("mode", ["decomposed", "padded"])
-@pytest.mark.parametrize("dtype", ["bf16", "fp8_e4m3"])
+@pytest.mark.parametrize("dtype", ["bf16", "fp8_e4m3", "fp8_compute", "bf16_fa2", "bf16_fa3"])
 def test_flashinfer_runner_graph_request_switch_lengths_and_cleanup(mode, dtype, monkeypatch, request):
     pytest.importorskip("flashinfer")
-    # The full mixed backend/KV/Graph suite triggers an illegal access in native
-    # BF16 padded mode, although simpler mode-switch sequences pass. The exact
-    # interaction is unresolved (see docs/experiments/flashinfer-runtime.md).
-    # Serving fixes its configuration for each process. Test native padded in a
-    # fresh process with real capture/replay and cleanup, avoiding contamination.
+    # Mixed backend/KV/Graph suites can poison FlashInfer's process state:
+    # previously BF16 padded raised an illegal access; after native FA3 FP8,
+    # BF16 decomposed can hang too. The interaction remains unresolved (see
+    # docs/experiments/flashinfer-runtime.md). Serving fixes its configuration
+    # per process. Exercise each configuration in a fresh process with real
+    # capture/replay and cleanup, including changes of lengths and requests.
     child_flag = "FLUXSERVE_TEST_NATIVE_GRAPH_CHILD"
-    if dtype == "bf16" and mode == "padded" and os.environ.get(child_flag) != "1":
+    if os.environ.get(child_flag) != "1":
         result = subprocess.run(
             [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider",
              f"{__file__}::{request.node.name}"],
@@ -288,9 +289,15 @@ def test_flashinfer_runner_graph_request_switch_lengths_and_cleanup(mode, dtype,
 
         def __init__(self):
             self.layers = [attention(0), attention(1)]
-            if dtype == "bf16":
+            if dtype == "fp8_compute":
+                if torch.cuda.get_device_capability()[0] != 9:
+                    pytest.skip("Native FP8 requires Hopper")
+                for layer in self.layers:
+                    layer.attention_compute_dtype = "fp8"
+            if dtype.startswith("bf16"):
                 for layer in self.layers:
                     layer.kv_quantization = KVQuantizationConfig()
+                    layer.flashinfer_kernel_backend = dtype.split("_")[1] if "_" in dtype else "auto"
             self.channels = torch.arange(512, device="cuda").float().view(1, 1, 512)
 
         def __call__(
@@ -333,7 +340,11 @@ def test_flashinfer_runner_graph_request_switch_lengths_and_cleanup(mode, dtype,
         block_length=64,
         max_length=256,
         decoder=SimpleNamespace(mask_id=7),
-        runner_config=SimpleNamespace(decode_cuda_graph_mode=mode),
+        runner_config=SimpleNamespace(
+            decode_cuda_graph_mode=mode,
+            attention_compute_dtype="fp8" if dtype == "fp8_compute" else "bf16",
+            flashinfer_kernel_backend=dtype.split("_")[1] if dtype.startswith("bf16_") else "auto",
+        ),
         kv_quantization=model.layers[0].kv_quantization,
         tp_group=SimpleNamespace(barrier=lambda: None),
     )

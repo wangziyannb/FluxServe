@@ -1,0 +1,350 @@
+{
+  "version": 1,
+  "archive": "records.tar.gz",
+  "archive_bytes": 1458207,
+  "archive_sha256": "3e5991eb5699ed0f145949aab5a842b751f75b6574d93d23da4e61fbd8229734",
+  "uncompressed_bytes": 19701225,
+  "member_count": 85,
+  "members": {
+    "2gpu-bf16-compute-graph/accuracy.json": {
+      "bytes": 411,
+      "sha256": "7800b81a1195e969d4816cefeede8bc4d270c46df264691f78ff2f4f3c0d28f2"
+    },
+    "2gpu-bf16-compute-graph/after.json": {
+      "bytes": 343,
+      "sha256": "c6b1d314be51088bdc2a329d3ee61fa3eee89d1e21ba4d4aa72b1bd4627f3d99"
+    },
+    "2gpu-bf16-compute-graph/batches.json": {
+      "bytes": 495,
+      "sha256": "a1124fb9a8bcd8f52b5481e79f3b1890f9aace3810bcd59a3d4c2060757425a9"
+    },
+    "2gpu-bf16-compute-graph/before.json": {
+      "bytes": 339,
+      "sha256": "b48020fbfcf894100679fdf953a30818c1736175d2354efc4876b83b41e30cfb"
+    },
+    "2gpu-bf16-compute-graph/command.json": {
+      "bytes": 2597,
+      "sha256": "acc81d76e1d885a3522dbbab5ed722f8a681f2cd74db433c364bdc656fd73b11"
+    },
+    "2gpu-bf16-compute-graph/completion-tokens.jsonl": {
+      "bytes": 36465,
+      "sha256": "2dc87ac2f417d0afdd1daf8076c96d082648c17a54652a129fb8bfe722ffa778"
+    },
+    "2gpu-bf16-compute-graph/launcher.log": {
+      "bytes": 12814,
+      "sha256": "63862500b7d2f090855b6372b602c245fa17b05663b793828df4f1cf04d1b0da"
+    },
+    "2gpu-bf16-compute-graph/predictions.jsonl": {
+      "bytes": 21315,
+      "sha256": "505c4a4549039efc65aa024fbcd07330e5332cfcce19eae6a5679f3905e54deb"
+    },
+    "2gpu-bf16-compute-graph/process.json": {
+      "bytes": 389,
+      "sha256": "9edbfc1ca21a0912bc0236645ef780d97fed76542ec63d4a8d7c578401879992"
+    },
+    "2gpu-bf16-compute-graph/result.json": {
+      "bytes": 5482,
+      "sha256": "7909366f102d6178cc97e7acadeabae9290016f88740fca2c0d9680a6866d499"
+    },
+    "2gpu-bf16-compute-graph/run.log": {
+      "bytes": 5251,
+      "sha256": "5f20bd9b3c1e88436dae272910e43adbb4765496daecbeaa88a27b3f81407b21"
+    },
+    "2gpu-bf16-compute-graph/run_metrics.json": {
+      "bytes": 3990,
+      "sha256": "5a05f2a8363471c731b4e99bd1ceb48103d2b71e217159e5a43323656b2de04e"
+    },
+    "2gpu-bf16-compute-graph/run_smoke_threshold_0.95.jsonl": {
+      "bytes": 61860,
+      "sha256": "e9e81a3661ec4b858ecce392285ab7661d236ee237d5cef2f7a4c55e18c6757a"
+    },
+    "2gpu-bf16-compute-graph/scoring.log": {
+      "bytes": 411,
+      "sha256": "7800b81a1195e969d4816cefeede8bc4d270c46df264691f78ff2f4f3c0d28f2"
+    },
+    "2gpu-bf16-compute-graph/telemetry.jsonl": {
+      "bytes": 56862,
+      "sha256": "7b181c68f4296d02bfb5dcb58b400b02f204a1ad1b6bb3b5859a6a3f1bad731b"
+    },
+    "2gpu-fp8-compute-eager/accuracy.json": {
+      "bytes": 411,
+      "sha256": "7800b81a1195e969d4816cefeede8bc4d270c46df264691f78ff2f4f3c0d28f2"
+    },
+    "2gpu-fp8-compute-eager/after.json": {
+      "bytes": 341,
+      "sha256": "d7b9f68198e28d017072def720f5926e0a707bb5651774bd596b7d70b8f94aa3"
+    },
+    "2gpu-fp8-compute-eager/batches.json": {
+      "bytes": 492,
+      "sha256": "0f6a88af3f960856ca8e27d385011168802ab5ec4a548c2eb3dd6d0fab40b068"
+    },
+    "2gpu-fp8-compute-eager/before.json": {
+      "bytes": 339,
+      "sha256": "19210e16cdf9bcce895944a10aaf3a910747ba80956bb1d78ba48ebef20f31de"
+    },
+    "2gpu-fp8-compute-eager/command.json": {
+      "bytes": 2571,
+      "sha256": "ca0969a2c6be6946c3ad37eb55770605e1a9ddc238453981836b817ed3c5a81e"
+    },
+    "2gpu-fp8-compute-eager/completion-tokens.jsonl": {
+      "bytes": 31093,
+      "sha256": "6d0051e03da21ac2a6fa0cc585a43a639b19f39be1b889993dde0a00091a3804"
+    },
+    "2gpu-fp8-compute-eager/launcher.log": {
+      "bytes": 11870,
+      "sha256": "5e27a9280722e807ffef03a9881d661f7078804691ee3a9267cad2be8586e741"
+    },
+    "2gpu-fp8-compute-eager/predictions.jsonl": {
+      "bytes": 18084,
+      "sha256": "26b7ba2e2a9a35f4a40c7c1af64400eda08a570558cdbd6426c82506674d8a11"
+    },
+    "2gpu-fp8-compute-eager/process.json": {
+      "bytes": 389,
+      "sha256": "9715739d500f01c22a30d5483da9855959a90fcf6f2fcb78dc95e94ef42b8dab"
+    },
+    "2gpu-fp8-compute-eager/result.json": {
+      "bytes": 3420,
+      "sha256": "2d1d8f813cf51ce11ae71aa49930314813d9b606d2062a260a7513c5b43d95a7"
+    },
+    "2gpu-fp8-compute-eager/run.log": {
+      "bytes": 4315,
+      "sha256": "3537c5a20cab733673cbbc67178eb1e3b40ebe0ff6697dbcf1e4885e7ad4bc2e"
+    },
+    "2gpu-fp8-compute-eager/run_metrics.json": {
+      "bytes": 2033,
+      "sha256": "d3a508e2d82b4d8230be2cac896b1a7859d21ca283df04dca141f265500cbd3f"
+    },
+    "2gpu-fp8-compute-eager/run_smoke_threshold_0.95.jsonl": {
+      "bytes": 58551,
+      "sha256": "fa8c2867e88f92172bf4624012af7b4d754b3a944c533f55ebdd4c2fd4584c2c"
+    },
+    "2gpu-fp8-compute-eager/scoring.log": {
+      "bytes": 411,
+      "sha256": "7800b81a1195e969d4816cefeede8bc4d270c46df264691f78ff2f4f3c0d28f2"
+    },
+    "2gpu-fp8-compute-eager/telemetry.jsonl": {
+      "bytes": 177014,
+      "sha256": "ef80db72df79174a184d4cd59fcda2f99d090cea21f1c1ca307decba813bf03b"
+    },
+    "2gpu-fp8-compute-graph/accuracy.json": {
+      "bytes": 414,
+      "sha256": "67464e35f351682ab6444f2855a44de5df48df10cc97ae447a661989c13464fe"
+    },
+    "2gpu-fp8-compute-graph/after.json": {
+      "bytes": 341,
+      "sha256": "0469d9cc43bd029dc19ec897b45f2529ba6290246b864254cf726e422987f9ee"
+    },
+    "2gpu-fp8-compute-graph/batches.json": {
+      "bytes": 493,
+      "sha256": "371a45c6c85eba478c0cebc411a715129dcb78dd96f11107d3fd02cce4ce8680"
+    },
+    "2gpu-fp8-compute-graph/before.json": {
+      "bytes": 339,
+      "sha256": "245cf5a56f4ec0f0dab97b7c04754a188fc8cedd06a6f6221e8aba9d383ec4fb"
+    },
+    "2gpu-fp8-compute-graph/command.json": {
+      "bytes": 2595,
+      "sha256": "630f208f81618a5df3746d290b96e7fe776965acc93953fb599f39b80c96f131"
+    },
+    "2gpu-fp8-compute-graph/completion-tokens.jsonl": {
+      "bytes": 38710,
+      "sha256": "0eb2425ce7457faaa15948259d35bf95b9876bb6ceaa204c75ef855b13915ec2"
+    },
+    "2gpu-fp8-compute-graph/launcher.log": {
+      "bytes": 12806,
+      "sha256": "b8dbd967d7bfd93142db683181508a0ebe706e81f36087a4232d3f263e46f04b"
+    },
+    "2gpu-fp8-compute-graph/predictions.jsonl": {
+      "bytes": 22634,
+      "sha256": "162f16da2de9a9c4ef1739cb4c54688c1890809d5ec389fb7d22aa2f71e90568"
+    },
+    "2gpu-fp8-compute-graph/process.json": {
+      "bytes": 389,
+      "sha256": "e7b84d3be3aa31abbada4fbe5cef9986240872c19653f6f078ba4018916ab7f0"
+    },
+    "2gpu-fp8-compute-graph/result.json": {
+      "bytes": 5481,
+      "sha256": "4799f0200ab2e7a67267ab88df1e5cf5110fc50c762f4b068347c7401f28c59d"
+    },
+    "2gpu-fp8-compute-graph/run.log": {
+      "bytes": 5243,
+      "sha256": "63bebd5bc1e10658cf5f09efa5cbb6b311bd76f667ea2638449325bd1fc17c7c"
+    },
+    "2gpu-fp8-compute-graph/run_metrics.json": {
+      "bytes": 3988,
+      "sha256": "bf335f4c54ed442705eb03cee98439a0a1b0763ef428e18fcbd8231368d81f87"
+    },
+    "2gpu-fp8-compute-graph/run_smoke_threshold_0.95.jsonl": {
+      "bytes": 63213,
+      "sha256": "214bab61ecc7fb18dbeebdabd0ac98f7effa17bf9279d6fc9b5bbe52334c698b"
+    },
+    "2gpu-fp8-compute-graph/scoring.log": {
+      "bytes": 414,
+      "sha256": "67464e35f351682ab6444f2855a44de5df48df10cc97ae447a661989c13464fe"
+    },
+    "2gpu-fp8-compute-graph/telemetry.jsonl": {
+      "bytes": 43495,
+      "sha256": "b6175d7f60f82f0ca6923ac02749a292a26833d10da89a140575be28a5c92bf7"
+    },
+    "4gpu-bf16-compute-graph/accuracy.json": {
+      "bytes": 411,
+      "sha256": "7800b81a1195e969d4816cefeede8bc4d270c46df264691f78ff2f4f3c0d28f2"
+    },
+    "4gpu-bf16-compute-graph/after.json": {
+      "bytes": 342,
+      "sha256": "04fb5085d9c90035ebd2a9d59788ea3d9ee1aa66a8fadaaf4d49107fa53a937e"
+    },
+    "4gpu-bf16-compute-graph/batches.json": {
+      "bytes": 492,
+      "sha256": "bdf82e7531ff51173f4bf229bf1f4a3442477f25a85d73e8581d5b55afc7a619"
+    },
+    "4gpu-bf16-compute-graph/before.json": {
+      "bytes": 339,
+      "sha256": "289b2c6914480f1ea511d2873e4160fdd7f44e82290dd2394a791ac71955a77b"
+    },
+    "4gpu-bf16-compute-graph/command.json": {
+      "bytes": 2601,
+      "sha256": "25e59a5c62f8bc28454c4a0bbe63e5f68331709f61fa58de9b31736638d3cac6"
+    },
+    "4gpu-bf16-compute-graph/completion-tokens.jsonl": {
+      "bytes": 38466,
+      "sha256": "fe9b99c6ab645836b29181431f59ad67d257321df313e823b626cccaa9290bd9"
+    },
+    "4gpu-bf16-compute-graph/launcher.log": {
+      "bytes": 19332,
+      "sha256": "454f56abbc9e2aab8e1cdbe5d23ff44918c85e2dd78edd53c42b74723b9cdd9f"
+    },
+    "4gpu-bf16-compute-graph/predictions.jsonl": {
+      "bytes": 22769,
+      "sha256": "fe96e13a8d04b8ac257b25cf479c733d995c3a6e3bfeef9153569459163f5183"
+    },
+    "4gpu-bf16-compute-graph/process.json": {
+      "bytes": 551,
+      "sha256": "7ed902cb09f5e8a89321e83ec9057ee05197b4eb549b021180bcac2d47ef1a42"
+    },
+    "4gpu-bf16-compute-graph/result.json": {
+      "bytes": 9333,
+      "sha256": "95e0958438f634c8573a428f65d1036f13092a8e52a342ffb01e78da8dc77bc1"
+    },
+    "4gpu-bf16-compute-graph/run.log": {
+      "bytes": 5247,
+      "sha256": "ce09b0ac5113f74d77715133c79626aefe1fa3f58e83814448465eaa92316645"
+    },
+    "4gpu-bf16-compute-graph/run_metrics.json": {
+      "bytes": 7460,
+      "sha256": "eaea2a8292f456ccc1f416ca3cc231fe6acd37dbc89cb48f108e36c06cd5acb7"
+    },
+    "4gpu-bf16-compute-graph/run_smoke_threshold_0.95.jsonl": {
+      "bytes": 63305,
+      "sha256": "0b759691d5e63356a2e4c0aeb9f8242a9c75a877a3d2e3a7d711b667b2682a4f"
+    },
+    "4gpu-bf16-compute-graph/scoring.log": {
+      "bytes": 411,
+      "sha256": "7800b81a1195e969d4816cefeede8bc4d270c46df264691f78ff2f4f3c0d28f2"
+    },
+    "4gpu-bf16-compute-graph/telemetry.jsonl": {
+      "bytes": 78788,
+      "sha256": "ea76e261d7c126b3893276d8176bb061c95352641131c0162c028d7837b8ad09"
+    },
+    "4gpu-fp8-compute-graph/accuracy.json": {
+      "bytes": 414,
+      "sha256": "67464e35f351682ab6444f2855a44de5df48df10cc97ae447a661989c13464fe"
+    },
+    "4gpu-fp8-compute-graph/after.json": {
+      "bytes": 339,
+      "sha256": "0f94598382adae631272daa406b3eece6172925e865cc4f01537ca29362556fa"
+    },
+    "4gpu-fp8-compute-graph/batches.json": {
+      "bytes": 492,
+      "sha256": "acc404541a4fb17137595be7845614a841c04df62ea0fea37c24c998a8f627b3"
+    },
+    "4gpu-fp8-compute-graph/before.json": {
+      "bytes": 339,
+      "sha256": "f3d9b7a64445c8cf02b6c764c0f7be2886e6ddb114a7f7903de3f5a77cd13bbf"
+    },
+    "4gpu-fp8-compute-graph/command.json": {
+      "bytes": 2599,
+      "sha256": "770f82161e1113c118f72cc7b3561418acb8759b9dd9d5d685302c3af4ddd68d"
+    },
+    "4gpu-fp8-compute-graph/completion-tokens.jsonl": {
+      "bytes": 29775,
+      "sha256": "63dd6b57035f2e5ca7abe01fc63e117adde7e0e6983c93019f9ea8af891aa6c5"
+    },
+    "4gpu-fp8-compute-graph/launcher.log": {
+      "bytes": 19329,
+      "sha256": "c77a7aa4667a8c9808a10eceeaf9779fe958216b4c3c3ea2135498747699e645"
+    },
+    "4gpu-fp8-compute-graph/predictions.jsonl": {
+      "bytes": 17505,
+      "sha256": "abe1e474cbb45e510e44aad20efb2309d728ba234d7ceee4ab001e4a7272ba68"
+    },
+    "4gpu-fp8-compute-graph/process.json": {
+      "bytes": 551,
+      "sha256": "501d0ff6b55923dd408250802f762fa57ca83869747bbd711673aa959c140a7e"
+    },
+    "4gpu-fp8-compute-graph/result.json": {
+      "bytes": 9324,
+      "sha256": "79c5c23a52f5f7c17b833f950188f51f9e9a6c586de324072b4957b273ae820a"
+    },
+    "4gpu-fp8-compute-graph/run.log": {
+      "bytes": 5240,
+      "sha256": "309a44b7b9b69166e7ace381384e7f40048a4621e4a7d2661255316fa8fd954a"
+    },
+    "4gpu-fp8-compute-graph/run_metrics.json": {
+      "bytes": 7449,
+      "sha256": "f4a9b11e50d4d9b12cc0049a6b92caec3d8c89cb30519eb8f0b815afe0c764bc"
+    },
+    "4gpu-fp8-compute-graph/run_smoke_threshold_0.95.jsonl": {
+      "bytes": 57980,
+      "sha256": "996efb05cb32b11f77e7e110307ef46f577ed10cf1324d9bbb2a52e04bfda98b"
+    },
+    "4gpu-fp8-compute-graph/scoring.log": {
+      "bytes": 414,
+      "sha256": "67464e35f351682ab6444f2855a44de5df48df10cc97ae447a661989c13464fe"
+    },
+    "4gpu-fp8-compute-graph/telemetry.jsonl": {
+      "bytes": 34472,
+      "sha256": "f25fb509214b47ea0dcefcef33316d6443d219db45fe444ae6185b9829367fa6"
+    },
+    "config-tests.log": {
+      "bytes": 98,
+      "sha256": "761d92843e0f2fe671c8fd76d2483fc0a800832228c4db335271a5369b566f25"
+    },
+    "final-tests.log": {
+      "bytes": 687,
+      "sha256": "2c0ceb255d4072286a004f9437f3760dc87cc47fde3cc954fa0b41d19f9ecba9"
+    },
+    "full-model.log": {
+      "bytes": 1188,
+      "sha256": "2bd666c52b68bce350f1b43cf5bd77fa60d58459071adda501f2258981f05d64"
+    },
+    "graph-tests.log": {
+      "bytes": 113,
+      "sha256": "95f64a60f592b4a84070d51e9d6b8d2c21f25066025099c78d64bc1aa892f99b"
+    },
+    "isolated-bf16-graph.log": {
+      "bytes": 109,
+      "sha256": "723fc6ccc98ae3d4f5b5fcd03187ea37a6393fd05b59d92d4036d607286f7656"
+    },
+    "microbenchmark.log": {
+      "bytes": 2622,
+      "sha256": "d17b30710b1ac29d1a1960bcdcdc348f11e9c58ced4772f29f7ebb9131bc2f30"
+    },
+    "mixed-process-tests-interrupted.log": {
+      "bytes": 70,
+      "sha256": "76f97476f740cd9e847ae79c39141f23104080be8b1faa712e2525cf48ed5912"
+    },
+    "native-kernel.sass": {
+      "bytes": 18538666,
+      "sha256": "3bd39be78664ad7e7d6f6c2cf37b652c55df1db50c8d5e3972ec7b8e01c121a5"
+    },
+    "regression-tests.log": {
+      "bytes": 99,
+      "sha256": "4a187f38c99afb550d6c8a33d0f98bc5a283edfc84a08ba81580d02f75552f1d"
+    },
+    "unit-tests.log": {
+      "bytes": 591,
+      "sha256": "5d94b2cd5312aad7928e2b0495b97423fb71685cecb8a3b25b71de89cd2319c5"
+    }
+  }
+}

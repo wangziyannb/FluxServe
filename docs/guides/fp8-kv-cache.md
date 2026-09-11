@@ -14,6 +14,7 @@ NVFP4 权重组合需要 Blackwell 验证；不支持 NVFP4 KV 或 DiffusionGemm
 ```text
 --kv-cache-dtype {auto,bf16,fp8_e4m3,fp8}
 --kv-cache-scales /path/to/scales.json
+--attention-compute-dtype {bf16,fp8}
 ```
 
 `fp8` 是 `fp8_e4m3` 的别名。`auto` 仅根据 checkpoint 的 KV 声明选择格式，
@@ -63,9 +64,58 @@ fluxserve serve \
   --max-model-len 4096 --use-cuda-graph
 ```
 
-SDPA/Flex 的布局参数由 CLI 自动归一为 dense。FlashInfer FP8 使用公共 FA2
+SDPA/Flex 的布局参数由 CLI 自动归一为 dense。默认 FlashInfer FP8 KV 路径使用公共 FA2
 paged wrapper；不要求 `flashinfer-dllm` 的同 dtype block-extend 接口。
 启动日志输出最终 KV dtype、scale 来源和 attention 路径。
+
+### H100 原生 FP8 attention
+
+默认 `--attention-compute-dtype bf16` 保持上述计算路径。显式使用 `fp8` 可启用
+Hopper FA3 的 FP8 QK/PV Tensor Core 计算，输出仍为 BF16，softmax/累加保留高精度。
+这与仅将 KV 存为 FP8 是不同的精度配置；需要重新验证模型质量。
+
+在原有 paged FP8 KV 命令上增加：
+
+```text
+--attention-compute-dtype fp8
+--attention-backend flashinfer
+--flashinfer-prefill-mode paged --flashinfer-cache-mode paged --kv-cache-layout paged
+--kv-cache-dtype fp8_e4m3 --kv-cache-scales /path/to/scales.json
+```
+
+当前范围为 LLaDA2、Hopper（如 H100）、head dimension 64/128，支持 eager 和 paged
+prefill/decode CUDA Graph。权重量化独立，KV 沿用已有静态校准 scale；Q 在 QK norm/RoPE
+之后按每个 query head 对本次调用的 tokens 动态计算 `amax / 448`（全零 head 使用 1），
+通过两阶段 Triton reduction/encode 转为 E4M3。Q scale 全程在设备上计算，Graph replay
+也会更新；不需要另做 Q scale 校准，不使用 K scale 代替 Q scale。
+
+每个 diffusion block 被表示为独立的查询段，引用原请求从起点到可见 block 末尾的
+KV 页前缀。段内使用非因果 attention，保持块内双向、块间因果的原有语义，支持位置偏移
+和部分页。只复制页索引，不复制历史 KV，不构造二次方大小的自定义 mask。
+
+Graph 使用固定查询分段和工作分配，replay 前更新页表、可见长度及 FA3 调度表中的
+KV 起点/长度。固定 FlashInfer `0.6.18`（本仓库环境的 fork revision
+`5ce4d077c33bbe167386cf5487a4a5bb4bcafbfd`）会在 plan 时复制这些字段，因此仅修改外部
+CSR 不够。适配器检查该版本的 SM90 plan ABI；不支持的版本报错，不能无验证地升级。
+计算阶段不重新 plan/capture。Graph key 包含 attention compute dtype，防止复用另一精度的图。
+计算配置在进程启动时固定；同一进程中动态切换多种 FlashInfer 后端/精度组合不在已验证范围。
+回归中这种混用可导致旧 BF16 Graph 卡住，模型级配置对照因此使用独立进程。
+
+不满足硬件、布局、KV dtype 或 mask 契约时明确报错，不静默回退到 BF16。
+日志与 benchmark metrics 分别记录 `flashinfer-fa3-fp8`、`attention_compute_dtype`
+和 `attention_kernel`。KV 校准命令仍固定为 SDPA/BF16 attention。
+
+### 固定 FA2/FA3 的 BF16 对照
+
+`--flashinfer-kernel-backend {auto,fa2,fa3}` 默认保留原有选择。对 LLaDA2 的 paged
+BF16 KV，显式选择 `fa2` 或 `fa3` 会使用同一个查询分块、页表和 KV 写入适配器，
+支持 eager 和 CUDA Graph；因此可以在权重、KV、attention 都为 BF16 时比较后端。
+FP8 attention 只能选择 `auto` 或 `fa3`。当前 FlashInfer FA3 不支持 BF16 Q / FP8 KV，
+该组合明确报错；BF16 权重搭配 FA3 FP8 KV 时也必须显式启用 FP8 attention。
+
+每个 rank 的 benchmark metrics 另存 `observed_block_attention_kernels`，来自实际调用的
+wrapper 后端与 Q/KV dtype；Graph key 同时包含后端。各对照使用独立进程，避免后端混用。
+比较吞吐时仍需报告生成 token 数与 NFE，不能把生成行为变化全部归因于内核加速。
 
 ## Scale 文件及 checkpoint
 
@@ -95,6 +145,7 @@ checkpoint 接入 `model.layers.N.self_attn.k_proj.k_scale` / `v_proj.v_scale`�
 - **SDPA/Flex**：持久存储 FP8，仅在计算当前层 attention 时反量化；不同时创建整模型的 BF16 KV 副本。
 - **FlashInfer paged**：Triton 融合量化与页写入；Q/输出为 BF16，KV 为 FP8，公共 FA2 wrapper 接收每层 K/V scale。显式 block-causal mask 支持位置偏移和块内双向注意力。
 - **FlashInfer ragged 输入**：使用公共 paged FA2 wrapper 的 `page_size=1` 零复制视图。已检查的 FlashInfer 0.6.13 和当前固定的 0.6.18 ragged FA2 实现均未应用 BF16 Q / FP8 KV 路径的 `k_scale`/`v_scale`；此适配避免错误缩放，不创建 BF16 历史缓存。
+- **FlashInfer 原生 FP8 compute（显式启用）**：Q/K/V 为 E4M3，FA3 的 QK 和 PV 均使用 FP8 Tensor Core，输出 BF16；路径和 Graph 元数据处理见上节。
 - **内存**：相同容量的 FP8 KV 数据字节数恰为 BF16 的一半。页表、mask、workspace、权重、Graph 输出和临时反量化仍有开销；总显存和 TPS 不保证减半或提升。
 
 Graph capture 前完成 scale 固定、wrapper planning、kernel warmup 和固定地址缓冲区分配。
@@ -111,11 +162,14 @@ Flex prefill Graph 及原本不支持的并行组合仍禁用；Flex 编译关�
 ```bash
 PYTHONPATH=python:flux-kernel/python pytest -q test/runtime/test_kv_quantization.py
 PYTHONPATH=python:flux-kernel/python pytest -q test/runtime/test_kv_quantization_cuda.py
+PYTHONPATH=python:flux-kernel/python pytest -q test/runtime/test_native_fp8_attention.py test/runtime/test_native_fp8_attention_cuda.py
 ```
 
 CUDA 测试使用独立 PyTorch 编码和 attention 参考，默认 `rtol=1e-2, atol=1e-2`。
 包含非单位/不同层 scale、跨页写入、部分 prompt、连续重写、请求重排、页复用和 dummy 页，
 以及 SDPA/Flex、FlashInfer eager/replay 与清理检查。测试用小张量/两层模型不代表完整模型质量。
+原生 FP8 算子测试额外考虑 PV 中 softmax 概率的 FP8 舍入，同时限制相对 L2 误差 `<0.04`
+和最大绝对误差 `<0.08`；这只是随机张量测试的门槛，不能替代全量 GSM8K 等质量评估。
 
 每次离线 benchmark 额外生成 `<exp-name>_metrics.json`，记录：
 

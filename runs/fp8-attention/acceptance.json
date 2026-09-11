@@ -1,0 +1,19 @@
+{
+  "status": "passed",
+  "tests_passed": 76,
+  "full_model_runs": 5,
+  "questions_per_run": 16,
+  "runtime_sources_unchanged_since_full_model_validation": true,
+  "fp8_tensor_core_sass_verified": true,
+  "all_graph_ranks_replayed": true,
+  "timed_captures_and_invalidations": 0,
+  "full_gsm8k_accuracy_evaluated": false,
+  "known_limitation": "FlashInfer configurations must be fixed per process; mixed-backend process-state interaction unresolved",
+  "result_files": {
+    "summary.json": "fd2abe57b88c54fa33af26fc34423531755672ded42f2cb02f3fdbddd0e5829c",
+    "comparisons.json": "69856c34cc81f56141e48d1a3967d32b23b7bcb6316e920064a0f4400c504296",
+    "microbenchmark.json": "d1c30a5feb686c95d416617f8a6dcb874980a57510f91a87d70b4faa4fbcf010",
+    "fp8-instructions.json": "8a76a5a93ee55384676593412e622d9845d6c6f5ec1f3e2ed991b5741fc1711c",
+    "final-tests.log": "2c0ceb255d4072286a004f9437f3760dc87cc47fde3cc954fa0b41d19f9ecba9"
+  }
+}

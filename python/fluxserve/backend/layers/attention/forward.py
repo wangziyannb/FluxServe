@@ -47,6 +47,8 @@ class AttentionForward:
         self.config = config
         self.kv_quantization = KVQuantizationConfig()
         self.kv_observer = None
+        self.attention_compute_dtype = "bf16"
+        self.flashinfer_kernel_backend = "auto"
         self.flashinfer_fp8 = None
         self.dense = DenseAttention(config)
         self.flashinfer_ragged_prefill = FlashInferRaggedPrefillAttention(config)
@@ -65,6 +67,19 @@ class AttentionForward:
         attention_mask: Optional[torch.Tensor] = None,
         forward_batch: Optional[ForwardBatch] = None,
     ) -> tuple[torch.Tensor, Optional[tuple[torch.Tensor, torch.Tensor]]]:
+        if self.flashinfer_kernel_backend != "auto" and (
+            forward_batch is None
+            or not (forward_batch.use_flashinfer_paged_prefill or forward_batch.use_flashinfer_paged_decode)
+            or attention_mask is not None
+        ):
+            raise ValueError("Explicit FA2/FA3 requires paged block-causal metadata; no dense fallback")
+        if self.attention_compute_dtype == "fp8" and (
+            self.kv_quantization.dtype != "fp8_e4m3"
+            or forward_batch is None
+            or not (forward_batch.use_flashinfer_paged_prefill or forward_batch.use_flashinfer_paged_decode)
+            or attention_mask is not None
+        ):
+            raise ValueError("Native FP8 attention requires paged FP8 KV and block-causal metadata; no dense fallback")
         if self.kv_observer is not None:
             # LLaDA2 calls here after QK norm and RoPE, before any cache splice.
             self.kv_observer.observe(self.config.layer_id, k, v)
@@ -72,6 +87,17 @@ class AttentionForward:
             return self._forward_fp8(
                 q, k, v, past_key_values, use_cache, attention_mask, forward_batch,
             )
+        if self.flashinfer_kernel_backend != "auto":
+            if self.flashinfer_fp8 is None:
+                from fluxserve.backend.layers.attention.fp8_flashinfer import FP8FlashInferAttention
+                self.flashinfer_fp8 = FP8FlashInferAttention(
+                    self.config, "bf16", kv_dtype=torch.bfloat16,
+                    kernel_backend=self.flashinfer_kernel_backend,
+                )
+            out = self.flashinfer_fp8.forward_paged(
+                q, k, v, past_key_values, forward_batch, None, None,
+            )
+            return out, (k, v) if use_cache else None
         if self.flashinfer_paged_prefill.can_run(
             q,
             k,
@@ -150,7 +176,10 @@ class AttentionForward:
             # The paged path fuses encoding with the scatter into persistent KV.
             if self.flashinfer_fp8 is None:
                 from fluxserve.backend.layers.attention.fp8_flashinfer import FP8FlashInferAttention
-                self.flashinfer_fp8 = FP8FlashInferAttention(self.config)
+                self.flashinfer_fp8 = FP8FlashInferAttention(
+                    self.config, self.attention_compute_dtype,
+                    kernel_backend=self.flashinfer_kernel_backend,
+                )
             out = self.flashinfer_fp8.forward_paged(q, k, v, past, batch, k_scale, v_scale)
             return out, (encode_kv(k, k_scale), encode_kv(v, v_scale)) if use_cache else None
 

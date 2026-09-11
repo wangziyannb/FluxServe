@@ -1,0 +1,18 @@
+[
+  {
+    "gpus": 2,
+    "tps_ratio": 1.6790392403066556,
+    "tokens_ratio": 1.0652304911117807,
+    "nfe_ratio": 1.3102473498233216,
+    "forwards_per_second_ratio": 2.0652400895557026,
+    "correct_delta": -1
+  },
+  {
+    "gpus": 4,
+    "tps_ratio": 3.482073737611473,
+    "tokens_ratio": 0.7661648745519714,
+    "nfe_ratio": 0.4120061570035916,
+    "forwards_per_second_ratio": 1.8724896777281321,
+    "correct_delta": -1
+  }
+]

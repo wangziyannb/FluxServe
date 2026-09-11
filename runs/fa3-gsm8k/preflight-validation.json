@@ -1,0 +1,10 @@
+{
+  "status": "passed",
+  "tests_passed": 83,
+  "full_model_trials": [
+    "fp8-kv-fp8_e4m3-attn-fp8-fa3-2gpu-eager",
+    "bf16-kv-bf16-attn-bf16-fa3-4gpu-graph"
+  ],
+  "source_snapshot_sha256": "394363d4eb31b4aea0ad4f660d2ed3bd180750859ab2f313579aabed7b36f961",
+  "validated_at": "2026-09-11T10:04:06.773832+00:00"
+}

@@ -21,6 +21,14 @@ FP8_MAX = 448.0
 
 def add_kv_cache_arguments(parser):
     parser.add_argument(
+        "--flashinfer-kernel-backend", choices=("auto", "fa2", "fa3"), default="auto",
+        help="Pin the FlashInfer kernel for paged attention; explicit BF16 paths share block/page handling.",
+    )
+    parser.add_argument(
+        "--attention-compute-dtype", choices=("bf16", "fp8"), default="bf16",
+        help="Attention math: bf16 (existing paths) or native Hopper FP8 (FlashInfer paged FP8 KV).",
+    )
+    parser.add_argument(
         "--kv-cache-dtype",
         choices=("auto", "bf16", "fp8_e4m3", "fp8"),
         default="auto",
@@ -272,9 +280,11 @@ class KVCalibrationObserver:
         }
 
 
-def configure_kv_attention(model, config, observer=None):
+def configure_kv_attention(model, config, observer=None, *, attention_compute_dtype="bf16", flashinfer_kernel_backend="auto"):
     for module in model.modules():
         attention = getattr(module, "attention_forward", None)
         if attention is not None:
             attention.kv_quantization = config
             attention.kv_observer = observer
+            attention.attention_compute_dtype = attention_compute_dtype
+            attention.flashinfer_kernel_backend = flashinfer_kernel_backend

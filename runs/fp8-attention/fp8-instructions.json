@@ -1,0 +1,16 @@
+{
+  "architecture": "sm_90a",
+  "mnemonic": "QGMMA.*.F32.E4M3.E4M3",
+  "instruction_count": 324,
+  "examples": [
+    "/*1440*/                   QGMMA.64x128x32.F32.E4M3.E4M3 R24, gdesc[UR20], RZ, !UPT ;         /* 0x01e00000141879f3 */",
+    "/*14f0*/                   QGMMA.64x128x32.F32.E4M3.E4M3 R24, gdesc[UR20], R24 ;              /* 0x01e00000141879f3 */",
+    "/*1540*/                   QGMMA.64x128x32.F32.E4M3.E4M3 R24, gdesc[UR20], R24 ;              /* 0x01e00000141879f3 */",
+    "/*1590*/                   QGMMA.64x128x32.F32.E4M3.E4M3 R24, gdesc[UR20], R24, gsb0 ;        /* 0x01e00000141879f3 */",
+    "/*4050*/                   QGMMA.64x128x32.F32.E4M3.E4M3 R24, gdesc[UR20], RZ, !UPT ;         /* 0x01e00000141879f3 */",
+    "/*41a0*/                   QGMMA.64x128x32.F32.E4M3.E4M3 R24, gdesc[UR20], R24 ;              /* 0x01e00000141879f3 */",
+    "/*41f0*/                   QGMMA.64x128x32.F32.E4M3.E4M3 R24, gdesc[UR20], R24 ;              /* 0x01e00000141879f3 */",
+    "/*4260*/                   QGMMA.64x128x32.F32.E4M3.E4M3 R24, gdesc[UR20], R24, gsb0 ;        /* 0x01e00000141879f3 */"
+  ],
+  "sass_sha256": "3bd39be78664ad7e7d6f6c2cf37b652c55df1db50c8d5e3972ec7b8e01c121a5"
+}

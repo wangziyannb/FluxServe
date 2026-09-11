@@ -1,0 +1,12 @@
+{
+  "versions": {
+    "torch": "2.8.0+cu128",
+    "flashinfer-python": "0.6.18",
+    "triton": "3.4.0",
+    "transformers": "5.15.1",
+    "nvidia-cutlass-dsl": "4.7.0"
+  },
+  "hardware": "0, NVIDIA H100 80GB HBM3, GPU-8b5f0306-a3c4-63cc-2e0b-83b2974e3ea3, 81559 MiB, 560.35.05\n1, NVIDIA H100 80GB HBM3, GPU-58c1c51a-9549-f2ef-112e-48da67910f44, 81559 MiB, 560.35.05\n2, NVIDIA H100 80GB HBM3, GPU-51834abf-2291-d6cd-966b-e603a29182d6, 81559 MiB, 560.35.05\n3, NVIDIA H100 80GB HBM3, GPU-26cd954c-8fe4-ec78-027b-ec7eca116003, 81559 MiB, 560.35.05\n",
+  "topology": "\t\u001b[4mGPU0\tGPU1\tGPU2\tGPU3\tCPU Affinity\tNUMA Affinity\tGPU NUMA ID\u001b[0m\nGPU0\t X \tNV18\tNV18\tNV18\t0,2,4,6,8,10\t0\t\tN/A\nGPU1\tNV18\t X \tNV18\tNV18\t0,2,4,6,8,10\t0\t\tN/A\nGPU2\tNV18\tNV18\t X \tNV18\t0,2,4,6,8,10\t0\t\tN/A\nGPU3\tNV18\tNV18\tNV18\t X \t0,2,4,6,8,10\t0\t\tN/A\n\nLegend:\n\n  X    = Self\n  SYS  = Connection traversing PCIe as well as the SMP interconnect between NUMA nodes (e.g., QPI/UPI)\n  NODE = Connection traversing PCIe as well as the interconnect between PCIe Host Bridges within a NUMA node\n  PHB  = Connection traversing PCIe as well as a PCIe Host Bridge (typically the CPU)\n  PXB  = Connection traversing multiple PCIe bridges (without traversing the PCIe Host Bridge)\n  PIX  = Connection traversing at most a single PCIe bridge\n  NV#  = Connection traversing a bonded set of # NVLinks\n",
+  "python": "Python 3.12.14"
+}

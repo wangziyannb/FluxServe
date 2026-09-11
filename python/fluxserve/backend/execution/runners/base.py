@@ -149,6 +149,8 @@ class ModelRunner:
         )
 
         resolve_kv_dtype(self.model_config, self.runner_config.kv_cache_dtype)
+        from fluxserve.backend.layers.attention.native_fp8 import validate_native_fp8_config
+        validate_native_fp8_config(self.runner_config, self.model_config, self.device)
         quant_config = getattr(self.model_config, "quant_config", None)
         self.model = get_model(
             model_config=self.model_config,
@@ -163,15 +165,23 @@ class ModelRunner:
             getattr(self.model, "checkpoint_kv_scales", None),
         )
         self.kv_cache_dtype = self.kv_quantization.torch_dtype
-        configure_kv_attention(self.model, self.kv_quantization)
+        configure_kv_attention(
+            self.model, self.kv_quantization,
+            attention_compute_dtype=self.runner_config.attention_compute_dtype,
+            flashinfer_kernel_backend=self.runner_config.flashinfer_kernel_backend,
+        )
         logger.info(
             "KV cache dtype=%s scales=%s attention=%s",
             self.kv_quantization.dtype,
             self.kv_quantization.source,
             (
-                "flashinfer-fa2-fp8"
+                "flashinfer-fa3-fp8"
+                if self.runner_config.attention_compute_dtype == "fp8"
+                else "flashinfer-fa2-fp8"
                 if self.kv_quantization.dtype == "fp8_e4m3"
                 and self.runner_config.attention_backend == "flashinfer"
+                else f"flashinfer-{self.runner_config.flashinfer_kernel_backend}-bf16"
+                if self.runner_config.flashinfer_kernel_backend != "auto"
                 else self.runner_config.attention_backend
             ),
         )

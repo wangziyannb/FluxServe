@@ -300,6 +300,8 @@ def build_runner_config(args, batch_info):
         low_threshold=args.low_threshold,
         use_credit=args.use_credit,
         attention_backend=args.attention_backend,
+        attention_compute_dtype=getattr(args, "attention_compute_dtype", "bf16"),
+        flashinfer_kernel_backend=getattr(args, "flashinfer_kernel_backend", "auto"),
         flashinfer_decode_batch_mode=getattr(
             args, "flashinfer_decode_batch_mode", "max_batch"
         ),
@@ -831,6 +833,7 @@ def _write_memory_and_graph_metrics(
     graph_cache = getattr(graph, "past_key_values", None)
     flashinfer_graph = getattr(runner, "flashinfer_graph_runner", None)
     capture_counts_after = _flashinfer_capture_counts(runner)
+    from fluxserve.backend.layers.attention.native_fp8 import observed_block_kernels
     parameter_bytes_by_dtype = {}
     if hasattr(runner.model, "parameters"):
         for parameter in runner.model.parameters():
@@ -843,6 +846,7 @@ def _write_memory_and_graph_metrics(
         "rank": rank,
         "local_generation_seconds": local_generation_seconds,
         "parameter_bytes_by_dtype": parameter_bytes_by_dtype,
+        "observed_block_attention_kernels": observed_block_kernels(),
         "kv_data_bytes": kv_bytes,
         "graph_input_kv_bytes": graph_cache.nbytes if isinstance(graph_cache, torch.Tensor) else 0,
         "peak_allocated_bytes": torch.cuda.max_memory_allocated(),
@@ -870,6 +874,14 @@ def _write_memory_and_graph_metrics(
             "num_hidden_layers": getattr(getattr(runner, "model_config", None), "num_hidden_layers", None),
             "kv_scale_source": getattr(quant, "source", "none"),
             "attention_backend": args.attention_backend,
+            "attention_compute_dtype": getattr(args, "attention_compute_dtype", "bf16"),
+            "flashinfer_kernel_backend": getattr(args, "flashinfer_kernel_backend", "auto"),
+            "attention_kernel": (
+                "flashinfer-fa3-fp8" if getattr(args, "attention_compute_dtype", "bf16") == "fp8"
+                else "flashinfer-fa2-fp8-kv" if args.attention_backend == "flashinfer" and getattr(quant, "dtype", "bf16") == "fp8_e4m3"
+                else f"flashinfer-{args.flashinfer_kernel_backend}-bf16" if getattr(args, "flashinfer_kernel_backend", "auto") != "auto"
+                else args.attention_backend
+            ),
             "nfe": batch_info.total_forward,
             "generated_tokens": batch_info.total_token,
             "generation_seconds": batch_info.total_time,
@@ -1116,6 +1128,8 @@ def calibrate_kv_cache(args) -> None:
     args.attention_backend = "sdpa"
     args.attention_backend_explicit = True
     args.kv_cache_dtype = "bf16"
+    args.attention_compute_dtype = "bf16"
+    args.flashinfer_kernel_backend = "auto"
     args.kv_cache_scales = None
     args.use_cuda_graph = False
     args.use_prefill_cuda_graph = False

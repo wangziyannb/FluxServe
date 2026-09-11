@@ -1,0 +1,837 @@
+diff --git a/docs/guides/fp8-kv-cache.md b/docs/guides/fp8-kv-cache.md
+index ab34237..95bd19f 100644
+--- a/docs/guides/fp8-kv-cache.md
++++ b/docs/guides/fp8-kv-cache.md
+@@ -14,6 +14,7 @@ NVFP4 权重组合需要 Blackwell 验证；不支持 NVFP4 KV 或 DiffusionGemm
+ ```text
+ --kv-cache-dtype {auto,bf16,fp8_e4m3,fp8}
+ --kv-cache-scales /path/to/scales.json
++--attention-compute-dtype {bf16,fp8}
+ ```
+ 
+ `fp8` 是 `fp8_e4m3` 的别名。`auto` 仅根据 checkpoint 的 KV 声明选择格式，
+@@ -63,10 +64,59 @@ fluxserve serve \
+   --max-model-len 4096 --use-cuda-graph
+ ```
+ 
+-SDPA/Flex 的布局参数由 CLI 自动归一为 dense。FlashInfer FP8 使用公共 FA2
++SDPA/Flex 的布局参数由 CLI 自动归一为 dense。默认 FlashInfer FP8 KV 路径使用公共 FA2
+ paged wrapper；不要求 `flashinfer-dllm` 的同 dtype block-extend 接口。
+ 启动日志输出最终 KV dtype、scale 来源和 attention 路径。
+ 
++### H100 原生 FP8 attention
++
++默认 `--attention-compute-dtype bf16` 保持上述计算路径。显式使用 `fp8` 可启用
++Hopper FA3 的 FP8 QK/PV Tensor Core 计算，输出仍为 BF16，softmax/累加保留高精度。
++这与仅将 KV 存为 FP8 是不同的精度配置；需要重新验证模型质量。
++
++在原有 paged FP8 KV 命令上增加：
++
++```text
++--attention-compute-dtype fp8
++--attention-backend flashinfer
++--flashinfer-prefill-mode paged --flashinfer-cache-mode paged --kv-cache-layout paged
++--kv-cache-dtype fp8_e4m3 --kv-cache-scales /path/to/scales.json
++```
++
++当前范围为 LLaDA2、Hopper（如 H100）、head dimension 64/128，支持 eager 和 paged
++prefill/decode CUDA Graph。权重量化独立，KV 沿用已有静态校准 scale；Q 在 QK norm/RoPE
++之后按每个 query head 对本次调用的 tokens 动态计算 `amax / 448`（全零 head 使用 1），
++通过两阶段 Triton reduction/encode 转为 E4M3。Q scale 全程在设备上计算，Graph replay
++也会更新；不需要另做 Q scale 校准，不使用 K scale 代替 Q scale。
++
++每个 diffusion block 被表示为独立的查询段，引用原请求从起点到可见 block 末尾的
++KV 页前缀。段内使用非因果 attention，保持块内双向、块间因果的原有语义，支持位置偏移
++和部分页。只复制页索引，不复制历史 KV，不构造二次方大小的自定义 mask。
++
++Graph 使用固定查询分段和工作分配，replay 前更新页表、可见长度及 FA3 调度表中的
++KV 起点/长度。固定 FlashInfer `0.6.18`（本仓库环境的 fork revision
++`5ce4d077c33bbe167386cf5487a4a5bb4bcafbfd`）会在 plan 时复制这些字段，因此仅修改外部
++CSR 不够。适配器检查该版本的 SM90 plan ABI；不支持的版本报错，不能无验证地升级。
++计算阶段不重新 plan/capture。Graph key 包含 attention compute dtype，防止复用另一精度的图。
++计算配置在进程启动时固定；同一进程中动态切换多种 FlashInfer 后端/精度组合不在已验证范围。
++回归中这种混用可导致旧 BF16 Graph 卡住，模型级配置对照因此使用独立进程。
++
++不满足硬件、布局、KV dtype 或 mask 契约时明确报错，不静默回退到 BF16。
++日志与 benchmark metrics 分别记录 `flashinfer-fa3-fp8`、`attention_compute_dtype`
++和 `attention_kernel`。KV 校准命令仍固定为 SDPA/BF16 attention。
++
++### 固定 FA2/FA3 的 BF16 对照
++
++`--flashinfer-kernel-backend {auto,fa2,fa3}` 默认保留原有选择。对 LLaDA2 的 paged
++BF16 KV，显式选择 `fa2` 或 `fa3` 会使用同一个查询分块、页表和 KV 写入适配器，
++支持 eager 和 CUDA Graph；因此可以在权重、KV、attention 都为 BF16 时比较后端。
++FP8 attention 只能选择 `auto` 或 `fa3`。当前 FlashInfer FA3 不支持 BF16 Q / FP8 KV，
++该组合明确报错；BF16 权重搭配 FA3 FP8 KV 时也必须显式启用 FP8 attention。
++
++每个 rank 的 benchmark metrics 另存 `observed_block_attention_kernels`，来自实际调用的
++wrapper 后端与 Q/KV dtype；Graph key 同时包含后端。各对照使用独立进程，避免后端混用。
++比较吞吐时仍需报告生成 token 数与 NFE，不能把生成行为变化全部归因于内核加速。
++
+ ## Scale 文件及 checkpoint
+ 
+ 版本 1 JSON 包含：
+@@ -95,6 +145,7 @@ checkpoint 接入 `model.layers.N.self_attn.k_proj.k_scale` / `v_proj.v_scale`
+ - **SDPA/Flex**：持久存储 FP8，仅在计算当前层 attention 时反量化；不同时创建整模型的 BF16 KV 副本。
+ - **FlashInfer paged**：Triton 融合量化与页写入；Q/输出为 BF16，KV 为 FP8，公共 FA2 wrapper 接收每层 K/V scale。显式 block-causal mask 支持位置偏移和块内双向注意力。
+ - **FlashInfer ragged 输入**：使用公共 paged FA2 wrapper 的 `page_size=1` 零复制视图。已检查的 FlashInfer 0.6.13 和当前固定的 0.6.18 ragged FA2 实现均未应用 BF16 Q / FP8 KV 路径的 `k_scale`/`v_scale`；此适配避免错误缩放，不创建 BF16 历史缓存。
++- **FlashInfer 原生 FP8 compute（显式启用）**：Q/K/V 为 E4M3，FA3 的 QK 和 PV 均使用 FP8 Tensor Core，输出 BF16；路径和 Graph 元数据处理见上节。
+ - **内存**：相同容量的 FP8 KV 数据字节数恰为 BF16 的一半。页表、mask、workspace、权重、Graph 输出和临时反量化仍有开销；总显存和 TPS 不保证减半或提升。
+ 
+ Graph capture 前完成 scale 固定、wrapper planning、kernel warmup 和固定地址缓冲区分配。
+@@ -111,11 +162,14 @@ Flex prefill Graph 及原本不支持的并行组合仍禁用；Flex 编译关
+ ```bash
+ PYTHONPATH=python:flux-kernel/python pytest -q test/runtime/test_kv_quantization.py
+ PYTHONPATH=python:flux-kernel/python pytest -q test/runtime/test_kv_quantization_cuda.py
++PYTHONPATH=python:flux-kernel/python pytest -q test/runtime/test_native_fp8_attention.py test/runtime/test_native_fp8_attention_cuda.py
+ ```
+ 
+ CUDA 测试使用独立 PyTorch 编码和 attention 参考，默认 `rtol=1e-2, atol=1e-2`。
+ 包含非单位/不同层 scale、跨页写入、部分 prompt、连续重写、请求重排、页复用和 dummy 页，
+ 以及 SDPA/Flex、FlashInfer eager/replay 与清理检查。测试用小张量/两层模型不代表完整模型质量。
++原生 FP8 算子测试额外考虑 PV 中 softmax 概率的 FP8 舍入，同时限制相对 L2 误差 `<0.04`
++和最大绝对误差 `<0.08`；这只是随机张量测试的门槛，不能替代全量 GSM8K 等质量评估。
+ 
+ 每次离线 benchmark 额外生成 `<exp-name>_metrics.json`，记录：
+ 
+diff --git a/python/fluxserve/backend/execution/flashinfer_cuda_graph_runner.py b/python/fluxserve/backend/execution/flashinfer_cuda_graph_runner.py
+index 85375d4..0200f2a 100644
+--- a/python/fluxserve/backend/execution/flashinfer_cuda_graph_runner.py
++++ b/python/fluxserve/backend/execution/flashinfer_cuda_graph_runner.py
+@@ -347,7 +347,9 @@ class FlashInferCudaGraphRunner:
+             raise RuntimeError("Full-prefill CUDA graph received unsupported length")
+         cache = runner.past_key_values
+         key = (bucket, cache.data.data_ptr(), input_ids.dtype, cache.data.dtype,
+-               getattr(getattr(runner, "kv_quantization", None), "signature", None))
++               getattr(getattr(runner, "kv_quantization", None), "signature", None),
++               getattr(runner.runner_config, "attention_compute_dtype", "bf16"),
++               getattr(runner.runner_config, "flashinfer_kernel_backend", "auto"))
+         entry = self._graphs.get(key)
+         if entry is None:
+             entry = self._capture_llada2_prefill(runner, bucket, key)
+@@ -362,7 +364,12 @@ class FlashInferCudaGraphRunner:
+         entry.slot_mapping[:q_len].copy_(real_slots[:q_len])
+         entry.slot_mapping[q_len:].copy_(entry.dummy_slot_mapping[q_len:])
+         mask_key = (q_len, bucket, int(runner.block_length))
+-        if entry.last_mask_length != q_len:
++        if getattr(entry.wrapper, "block_paged", False):
++            indptr = torch.tensor([0, actual_pages.numel()], dtype=torch.int32, device=self.device)
++            last = torch.tensor([(q_len - 1) % cache.page_size + 1], dtype=torch.int32, device=self.device)
++            offsets = torch.zeros(1, dtype=torch.int32, device=self.device)
++            entry.wrapper.update_metadata(indptr, entry.kv_indices, last, offsets, offsets)
++        elif entry.last_mask_length != q_len:
+             entry.wrapper._custom_mask_buf.copy_(self._packed_masks[mask_key])
+             entry.last_mask_length = q_len
+         entry.graph.replay()
+@@ -474,7 +481,9 @@ class FlashInferCudaGraphRunner:
+             batch_sizes = self.decode_capture_batch_sizes
+         for batch_size in sorted(set(map(int, batch_sizes)), reverse=True):
+             key = (batch_size, cache.data.data_ptr(), torch.long, cache.data.dtype,
+-                   getattr(getattr(runner, "kv_quantization", None), "signature", None))
++                   getattr(getattr(runner, "kv_quantization", None), "signature", None),
++                   getattr(runner.runner_config, "attention_compute_dtype", "bf16"),
++                   getattr(runner.runner_config, "flashinfer_kernel_backend", "auto"))
+             if key not in self._decode_graphs:
+                 self._capture_llada2_decode(runner, batch_size, key)
+         self.capture_time_s += time.perf_counter() - started
+@@ -688,7 +697,9 @@ class FlashInferCudaGraphRunner:
+         batch_size = graph_bucket
+         cache = runner.past_key_values
+         key = (batch_size, cache.data.data_ptr(), input_ids.dtype, cache.data.dtype,
+-               getattr(getattr(runner, "kv_quantization", None), "signature", None))
++               getattr(getattr(runner, "kv_quantization", None), "signature", None),
++               getattr(runner.runner_config, "attention_compute_dtype", "bf16"),
++               getattr(runner.runner_config, "flashinfer_kernel_backend", "auto"))
+         entry = self._decode_graphs.get(key)
+         if entry is None:
+             entry = self._capture_llada2_decode(runner, batch_size, key)
+@@ -779,6 +790,11 @@ class FlashInferCudaGraphRunner:
+         entry.kv_offsets.zero_()
+         entry.append_batch_indices.copy_(padded_append_batch_indices)
+         entry.append_positions.copy_(padded_append_positions)
++        if getattr(entry.wrapper, "block_paged", False):
++            entry.wrapper.update_metadata(
++                entry.kv_indptr, entry.kv_indices, entry.last_page_len,
++                entry.q_offsets, entry.kv_offsets,
++            )
+         entry.graph.replay()
+         self.decode_replay_count += 1
+         self.decode_component_replay_count += 1
+@@ -837,7 +853,10 @@ class FlashInferCudaGraphRunner:
+             batch_size, dtype=torch.int32, device=self.device
+         )
+         fp8 = cache.data.dtype == torch.float8_e4m3fn
+-        native_graph = not fp8 and getattr(
++        compute_dtype = getattr(runner.runner_config, "attention_compute_dtype", "bf16")
++        kernel_backend = getattr(runner.runner_config, "flashinfer_kernel_backend", "auto")
++        block_paged = compute_dtype == "fp8" or (cache.data.dtype == torch.bfloat16 and kernel_backend != "auto")
++        native_graph = not fp8 and not block_paged and getattr(
+             runner.runner_config, "decode_cuda_graph_mode", "decomposed"
+         ) == "padded"
+         wrapper_kwargs = dict(
+@@ -859,9 +878,14 @@ class FlashInferCudaGraphRunner:
+                 block_extend=True,
+                 block_size=block_length,
+             )
+-        wrapper = flashinfer.BatchPrefillWithPagedKVCacheWrapper(
+-            self._workspace, **wrapper_kwargs
+-        )
++        if block_paged:
++            from fluxserve.backend.layers.attention.native_fp8 import BlockPagedWrapper
++            wrapper = BlockPagedWrapper(self._workspace, compute_dtype=compute_dtype,
++                                        backend="fa3" if kernel_backend == "auto" else kernel_backend)
++        else:
++            wrapper = flashinfer.BatchPrefillWithPagedKVCacheWrapper(
++                self._workspace, **wrapper_kwargs
++            )
+         input_ids = torch.full(
+             (batch_size, block_length), int(runner.decoder.mask_id), dtype=torch.long,
+             device=self.device,
+@@ -886,7 +910,7 @@ class FlashInferCudaGraphRunner:
+             ).unsqueeze(0)
+         ).reshape(-1)
+         plan_kwargs = {}
+-        if fp8:
++        if fp8 and not block_paged:
+             from fluxserve.backend.layers.attention.fp8_flashinfer import block_causal_mask
+             plan_kwargs["custom_mask"] = block_causal_mask(
+                 (block_length,) * batch_size, (max_kv_len,) * batch_size,
+@@ -894,23 +918,22 @@ class FlashInferCudaGraphRunner:
+             )
+         if native_graph:
+             plan_kwargs.update(q_offsets=q_offsets, kv_offsets=kv_offsets)
+-        wrapper.plan(
+-            qo_indptr, kv_indptr, kv_indices, last_page_len,
+-            num_qo_heads=runner.model.model.config.num_attention_heads
+-            // get_attention_tp_size(),
+-            num_kv_heads=max(
+-                1, runner.model.model.config.num_key_value_heads
+-                // get_attention_tp_size(),
+-            ),
+-            head_dim_qk=runner.model.model.config.hidden_size
+-            // runner.model.model.config.num_attention_heads,
+-            page_size=page_size,
+-            causal=False,
+-            q_data_type=torch.bfloat16,
+-            kv_data_type=cache.data.dtype,
+-            disable_split_kv=True,
+-            **plan_kwargs,
++        plan_geometry = dict(
++            num_qo_heads=runner.model.model.config.num_attention_heads // get_attention_tp_size(),
++            num_kv_heads=max(1, runner.model.model.config.num_key_value_heads // get_attention_tp_size()),
++            head_dim=runner.model.model.config.hidden_size // runner.model.model.config.num_attention_heads,
+         )
++        if block_paged:
++            wrapper.plan(
++                metadata=((block_length,) * batch_size, (max_kv_len,) * batch_size,
++                          (q_offset,) * batch_size, (0,) * batch_size),
++                kv_indptr=kv_indptr, kv_indices=kv_indices, last_page_len=last_page_len,
++                page_size=page_size, block_length=block_length, **plan_geometry,
++                sm_scale=plan_geometry["head_dim"] ** -0.5, use_cuda_graph=True,
++            )
++        else:
++            self._plan_decode_wrapper(wrapper, runner, qo_indptr, kv_indptr, kv_indices,
++                                      last_page_len, page_size, cache.data.dtype, plan_kwargs)
+         forward_batch = ForwardBatch(
+             forward_mode=ForwardMode.DECODE,
+             use_flashinfer_paged_decode=True,
+@@ -958,9 +981,9 @@ class FlashInferCudaGraphRunner:
+             torch.cuda.CUDAGraph(), input_ids, position_ids, kv_indptr, kv_indices,
+             last_page_len, slot_mapping, q_offsets, kv_offsets,
+             append_batch_indices, append_positions, wrapper, placeholder,
+-            fp8_max_kv_len=max_kv_len if fp8 else None,
++            fp8_max_kv_len=max_kv_len if fp8 and not block_paged else None,
+         )
+-        if fp8:
++        if fp8 and not block_paged:
+             # Compile metadata kernels before graph capture, using dummy inputs.
+             from flux_kernel.ops.kv_cache import update_fp8_decode_metadata
+             update_fp8_decode_metadata(
+@@ -988,12 +1011,30 @@ class FlashInferCudaGraphRunner:
+         self._decode_capture_counts_by_bs[batch_size] = (
+             self._decode_capture_counts_by_bs.get(batch_size, 0) + 1
+         )
+-        self.log(
+-            "CUDA graph captured: dynamic paged decode batch_size=%d layers=%d",
+-            batch_size, cache.num_layers,
+-        )
++        self.log("CUDA graph captured: dynamic paged decode batch_size=%d", batch_size)
+         return entry
+ 
++    @staticmethod
++    def _plan_decode_wrapper(wrapper, runner, qo_indptr, kv_indptr, kv_indices,
++                             last_page_len, page_size, kv_dtype, plan_kwargs):
++        wrapper.plan(
++            qo_indptr, kv_indptr, kv_indices, last_page_len,
++            num_qo_heads=runner.model.model.config.num_attention_heads
++            // get_attention_tp_size(),
++            num_kv_heads=max(
++                1, runner.model.model.config.num_key_value_heads
++                // get_attention_tp_size(),
++            ),
++            head_dim_qk=runner.model.model.config.hidden_size
++            // runner.model.model.config.num_attention_heads,
++            page_size=page_size,
++            causal=False,
++            q_data_type=torch.bfloat16,
++            kv_data_type=kv_dtype,
++            disable_split_kv=True,
++            **plan_kwargs,
++        )
++
+     def _capture_llada2_prefill(
+         self, runner, bucket: int, key: tuple
+     ) -> _GraphEntry:
+@@ -1003,9 +1044,17 @@ class FlashInferCudaGraphRunner:
+         cache = runner.past_key_values
+         page_size = int(cache.page_size)
+         bucket_pages = bucket // page_size
+-        wrapper = flashinfer.BatchPrefillWithPagedKVCacheWrapper(
+-            self._workspace, kv_layout="NHD", backend="fa2"
+-        )
++        compute_dtype = getattr(runner.runner_config, "attention_compute_dtype", "bf16")
++        kernel_backend = getattr(runner.runner_config, "flashinfer_kernel_backend", "auto")
++        block_paged = compute_dtype == "fp8" or (cache.data.dtype == torch.bfloat16 and kernel_backend != "auto")
++        if block_paged:
++            from fluxserve.backend.layers.attention.native_fp8 import BlockPagedWrapper
++            wrapper = BlockPagedWrapper(self._workspace, compute_dtype=compute_dtype,
++                                        backend="fa3" if kernel_backend == "auto" else kernel_backend)
++        else:
++            wrapper = flashinfer.BatchPrefillWithPagedKVCacheWrapper(
++                self._workspace, kv_layout="NHD", backend="fa2"
++            )
+         input_ids = torch.full(
+             (1, bucket), int(runner.decoder.mask_id), dtype=torch.long, device=self.device
+         )
+@@ -1022,51 +1071,63 @@ class FlashInferCudaGraphRunner:
+         qo_indptr = torch.tensor([0, bucket], dtype=torch.int32, device=self.device)
+         kv_indptr = torch.tensor([0, bucket_pages], dtype=torch.int32, device=self.device)
+         last_page_len = torch.tensor([page_size], dtype=torch.int32, device=self.device)
+-        q_pos = torch.arange(bucket, device=self.device)
+-        k_pos = torch.arange(bucket, device=self.device)
+-        mask = (q_pos[:, None] // runner.block_length) >= (
+-            k_pos[None, :] // runner.block_length
+-        )
+-        mask_indptr = torch.tensor([0, bucket * bucket], dtype=torch.int32, device=self.device)
+-        packed_mask, _ = segment_packbits(mask.flatten(), mask_indptr, bitorder="little")
+-        previous_bucket = max(
+-            (size for size in self.capture_sizes if size < bucket),
+-            default=0,
+-        )
+-        for actual_length in range(
+-            max(1, previous_bucket + 1),
+-            bucket + 1,
+-        ):
+-            actual_mask = mask & (k_pos[None, :] < actual_length)
+-            actual_mask[actual_length:] = False
+-            actual_packed_mask, _ = segment_packbits(
+-                actual_mask.flatten(), mask_indptr, bitorder="little"
++        if block_paged:
++            head_dim = runner.model.model.config.hidden_size // runner.model.model.config.num_attention_heads
++            wrapper.plan(
++                metadata=((bucket,), (bucket,), (0,), (0,)),
++                kv_indptr=kv_indptr, kv_indices=kv_indices, last_page_len=last_page_len,
++                page_size=page_size, block_length=int(runner.block_length),
++                num_qo_heads=runner.model.model.config.num_attention_heads // get_attention_tp_size(),
++                num_kv_heads=max(1, runner.model.model.config.num_key_value_heads // get_attention_tp_size()),
++                head_dim=head_dim, sm_scale=head_dim ** -0.5, use_cuda_graph=True,
+             )
+-            self._packed_masks[
+-                (actual_length, bucket, int(runner.block_length))
+-            ] = actual_packed_mask
+-        wrapper.plan(
+-            qo_indptr,
+-            kv_indptr,
+-            kv_indices,
+-            last_page_len,
+-            num_qo_heads=runner.model.model.config.num_attention_heads
+-            // get_attention_tp_size(),
+-            num_kv_heads=max(
+-                1,
+-                runner.model.model.config.num_key_value_heads
++            packed_mask = torch.empty(0, dtype=torch.uint8, device=self.device)
++        else:
++            q_pos = torch.arange(bucket, device=self.device)
++            k_pos = torch.arange(bucket, device=self.device)
++            mask = (q_pos[:, None] // runner.block_length) >= (
++                k_pos[None, :] // runner.block_length
++            )
++            mask_indptr = torch.tensor([0, bucket * bucket], dtype=torch.int32, device=self.device)
++            packed_mask, _ = segment_packbits(mask.flatten(), mask_indptr, bitorder="little")
++            previous_bucket = max(
++                (size for size in self.capture_sizes if size < bucket),
++                default=0,
++            )
++            for actual_length in range(
++                max(1, previous_bucket + 1),
++                bucket + 1,
++            ):
++                actual_mask = mask & (k_pos[None, :] < actual_length)
++                actual_mask[actual_length:] = False
++                actual_packed_mask, _ = segment_packbits(
++                    actual_mask.flatten(), mask_indptr, bitorder="little"
++                )
++                self._packed_masks[
++                    (actual_length, bucket, int(runner.block_length))
++                ] = actual_packed_mask
++            wrapper.plan(
++                qo_indptr,
++                kv_indptr,
++                kv_indices,
++                last_page_len,
++                num_qo_heads=runner.model.model.config.num_attention_heads
+                 // get_attention_tp_size(),
+-            ),
+-            head_dim_qk=runner.model.model.config.hidden_size
+-            // runner.model.model.config.num_attention_heads,
+-            page_size=page_size,
+-            custom_mask=mask.flatten(),
+-            causal=False,
+-            q_data_type=torch.bfloat16,
+-            kv_data_type=cache.data.dtype,
+-            disable_split_kv=True,
+-        )
+-        wrapper._custom_mask_buf.copy_(packed_mask)
++                num_kv_heads=max(
++                    1,
++                    runner.model.model.config.num_key_value_heads
++                    // get_attention_tp_size(),
++                ),
++                head_dim_qk=runner.model.model.config.hidden_size
++                // runner.model.model.config.num_attention_heads,
++                page_size=page_size,
++                custom_mask=mask.flatten(),
++                causal=False,
++                q_data_type=torch.bfloat16,
++                kv_data_type=cache.data.dtype,
++                disable_split_kv=True,
++            )
++            wrapper._custom_mask_buf.copy_(packed_mask)
+         forward_batch = ForwardBatch(
+             forward_mode=ForwardMode.EXTEND,
+             use_flashinfer_paged_prefill=True,
+diff --git a/python/fluxserve/backend/execution/forward_batch_info.py b/python/fluxserve/backend/execution/forward_batch_info.py
+index b9a54de..86250c5 100644
+--- a/python/fluxserve/backend/execution/forward_batch_info.py
++++ b/python/fluxserve/backend/execution/forward_batch_info.py
+@@ -135,6 +135,8 @@ class RunnerConfig:
+     mask_id: int = 156895
+     eos_id: int = 156892
+     attention_backend: str = "sdpa"
++    attention_compute_dtype: str = "bf16"
++    flashinfer_kernel_backend: str = "auto"
+     flashinfer_decode_batch_mode: str = "max_batch"
+     decode_cuda_graph_mode: str = "decomposed"
+     cuda_graph_capture_batch_sizes: Sequence[int] | None = None
+@@ -153,6 +155,19 @@ class RunnerConfig:
+     stability_threshold: int | None = None
+ 
+     def __post_init__(self):
++        if self.attention_compute_dtype not in {"bf16", "fp8"}:
++            raise ValueError("attention_compute_dtype must be 'bf16' or 'fp8'")
++        if self.flashinfer_kernel_backend not in {"auto", "fa2", "fa3"}:
++            raise ValueError("flashinfer_kernel_backend must be auto, fa2 or fa3")
++        if self.attention_compute_dtype == "fp8" and self.flashinfer_kernel_backend == "fa2":
++            raise ValueError("FP8 attention compute requires FA3")
++        if (self.attention_compute_dtype == "fp8" or self.flashinfer_kernel_backend != "auto") and (
++            self.attention_backend != "flashinfer"
++            or self.kv_cache_layout != "paged"
++            or self.flashinfer_cache_mode != "paged"
++            or self.flashinfer_prefill_mode != "paged"
++        ):
++            raise ValueError("Explicit FA2/FA3 or FP8 attention requires FlashInfer with paged prefill, cache and KV layout")
+         if self.enable_cuda_graph:
+             self.enable_prefill_cuda_graph = True
+             self.enable_decode_cuda_graph = True
+diff --git a/python/fluxserve/backend/execution/runners/base.py b/python/fluxserve/backend/execution/runners/base.py
+index 82e2768..70f0d0a 100644
+--- a/python/fluxserve/backend/execution/runners/base.py
++++ b/python/fluxserve/backend/execution/runners/base.py
+@@ -149,6 +149,8 @@ class ModelRunner:
+         )
+ 
+         resolve_kv_dtype(self.model_config, self.runner_config.kv_cache_dtype)
++        from fluxserve.backend.layers.attention.native_fp8 import validate_native_fp8_config
++        validate_native_fp8_config(self.runner_config, self.model_config, self.device)
+         quant_config = getattr(self.model_config, "quant_config", None)
+         self.model = get_model(
+             model_config=self.model_config,
+@@ -163,15 +165,23 @@ class ModelRunner:
+             getattr(self.model, "checkpoint_kv_scales", None),
+         )
+         self.kv_cache_dtype = self.kv_quantization.torch_dtype
+-        configure_kv_attention(self.model, self.kv_quantization)
++        configure_kv_attention(
++            self.model, self.kv_quantization,
++            attention_compute_dtype=self.runner_config.attention_compute_dtype,
++            flashinfer_kernel_backend=self.runner_config.flashinfer_kernel_backend,
++        )
+         logger.info(
+             "KV cache dtype=%s scales=%s attention=%s",
+             self.kv_quantization.dtype,
+             self.kv_quantization.source,
+             (
+-                "flashinfer-fa2-fp8"
++                "flashinfer-fa3-fp8"
++                if self.runner_config.attention_compute_dtype == "fp8"
++                else "flashinfer-fa2-fp8"
+                 if self.kv_quantization.dtype == "fp8_e4m3"
+                 and self.runner_config.attention_backend == "flashinfer"
++                else f"flashinfer-{self.runner_config.flashinfer_kernel_backend}-bf16"
++                if self.runner_config.flashinfer_kernel_backend != "auto"
+                 else self.runner_config.attention_backend
+             ),
+         )
+diff --git a/python/fluxserve/backend/layers/attention/forward.py b/python/fluxserve/backend/layers/attention/forward.py
+index 903ad5f..d412b54 100644
+--- a/python/fluxserve/backend/layers/attention/forward.py
++++ b/python/fluxserve/backend/layers/attention/forward.py
+@@ -47,6 +47,8 @@ class AttentionForward:
+         self.config = config
+         self.kv_quantization = KVQuantizationConfig()
+         self.kv_observer = None
++        self.attention_compute_dtype = "bf16"
++        self.flashinfer_kernel_backend = "auto"
+         self.flashinfer_fp8 = None
+         self.dense = DenseAttention(config)
+         self.flashinfer_ragged_prefill = FlashInferRaggedPrefillAttention(config)
+@@ -65,6 +67,19 @@ class AttentionForward:
+         attention_mask: Optional[torch.Tensor] = None,
+         forward_batch: Optional[ForwardBatch] = None,
+     ) -> tuple[torch.Tensor, Optional[tuple[torch.Tensor, torch.Tensor]]]:
++        if self.flashinfer_kernel_backend != "auto" and (
++            forward_batch is None
++            or not (forward_batch.use_flashinfer_paged_prefill or forward_batch.use_flashinfer_paged_decode)
++            or attention_mask is not None
++        ):
++            raise ValueError("Explicit FA2/FA3 requires paged block-causal metadata; no dense fallback")
++        if self.attention_compute_dtype == "fp8" and (
++            self.kv_quantization.dtype != "fp8_e4m3"
++            or forward_batch is None
++            or not (forward_batch.use_flashinfer_paged_prefill or forward_batch.use_flashinfer_paged_decode)
++            or attention_mask is not None
++        ):
++            raise ValueError("Native FP8 attention requires paged FP8 KV and block-causal metadata; no dense fallback")
+         if self.kv_observer is not None:
+             # LLaDA2 calls here after QK norm and RoPE, before any cache splice.
+             self.kv_observer.observe(self.config.layer_id, k, v)
+@@ -72,6 +87,17 @@ class AttentionForward:
+             return self._forward_fp8(
+                 q, k, v, past_key_values, use_cache, attention_mask, forward_batch,
+             )
++        if self.flashinfer_kernel_backend != "auto":
++            if self.flashinfer_fp8 is None:
++                from fluxserve.backend.layers.attention.fp8_flashinfer import FP8FlashInferAttention
++                self.flashinfer_fp8 = FP8FlashInferAttention(
++                    self.config, "bf16", kv_dtype=torch.bfloat16,
++                    kernel_backend=self.flashinfer_kernel_backend,
++                )
++            out = self.flashinfer_fp8.forward_paged(
++                q, k, v, past_key_values, forward_batch, None, None,
++            )
++            return out, (k, v) if use_cache else None
+         if self.flashinfer_paged_prefill.can_run(
+             q,
+             k,
+@@ -150,7 +176,10 @@ class AttentionForward:
+             # The paged path fuses encoding with the scatter into persistent KV.
+             if self.flashinfer_fp8 is None:
+                 from fluxserve.backend.layers.attention.fp8_flashinfer import FP8FlashInferAttention
+-                self.flashinfer_fp8 = FP8FlashInferAttention(self.config)
++                self.flashinfer_fp8 = FP8FlashInferAttention(
++                    self.config, self.attention_compute_dtype,
++                    kernel_backend=self.flashinfer_kernel_backend,
++                )
+             out = self.flashinfer_fp8.forward_paged(q, k, v, past, batch, k_scale, v_scale)
+             return out, (encode_kv(k, k_scale), encode_kv(v, v_scale)) if use_cache else None
+ 
+diff --git a/python/fluxserve/backend/layers/attention/fp8_flashinfer.py b/python/fluxserve/backend/layers/attention/fp8_flashinfer.py
+index 38ad528..d955695 100644
+--- a/python/fluxserve/backend/layers/attention/fp8_flashinfer.py
++++ b/python/fluxserve/backend/layers/attention/fp8_flashinfer.py
+@@ -1,4 +1,4 @@
+-"""Public FA2 wrappers for BF16 queries with scaled FP8 KV.
++"""FlashInfer adapters for scaled FP8 KV with BF16 or native FP8 compute.
+ 
+ No dependency on flashinfer-dllm's same-dtype block-extend kernels. Workspaces
+ are shared across layers; graph calls use wrappers planned by the graph runner.
+@@ -26,7 +26,7 @@ def block_causal_mask(q_lens, kv_lens, q_offsets, kv_offsets, block_length, devi
+ 
+ 
+ class _FA2State:
+-    def __init__(self, device, paged):
++    def __init__(self, device, paged, native=False, block_backend=None):
+         import flashinfer
+ 
+         self.workspace = torch.empty(
+@@ -37,7 +37,12 @@ class _FA2State:
+             if paged
+             else flashinfer.BatchPrefillWithRaggedKVCacheWrapper
+         )
+-        self.wrapper = cls(self.workspace, kv_layout="NHD", backend="fa2")
++        if block_backend:
++            from fluxserve.backend.layers.attention.native_fp8 import BlockPagedWrapper
++            self.wrapper = BlockPagedWrapper(self.workspace, backend=block_backend,
++                                            compute_dtype="fp8" if native else "bf16")
++        else:
++            self.wrapper = cls(self.workspace, kv_layout="NHD", backend="fa2")
+         self.key = None
+ 
+ 
+@@ -48,10 +53,10 @@ def clear_fp8_flashinfer_states():
+     _STATES.clear()
+ 
+ 
+-def _state(device, paged):
+-    key = (str(device), paged)
++def _state(device, paged, native=False, block_backend=None):
++    key = (str(device), paged, native, block_backend)
+     if key not in _STATES:
+-        _STATES[key] = _FA2State(device, paged)
++        _STATES[key] = _FA2State(device, paged, native, block_backend)
+     return _STATES[key]
+ 
+ 
+@@ -74,8 +79,13 @@ def _unpack(output, q, lengths):
+ 
+ 
+ class FP8FlashInferAttention:
+-    def __init__(self, config):
++    def __init__(self, config, compute_dtype="bf16", *, kv_dtype=FP8_DTYPE, kernel_backend="auto"):
+         self.config = config
++        self.native = compute_dtype == "fp8"
++        self.kv_dtype = kv_dtype
++        self.block_backend = ("fa3" if kernel_backend == "auto" else kernel_backend) if (
++            self.native or kv_dtype == torch.bfloat16
++        ) else None
+ 
+     def _metadata(self, q, batch, prefill):
+         q_lens = (
+@@ -99,13 +109,13 @@ class FP8FlashInferAttention:
+             )
+         q_lens, kv_lens, offsets, kv_offsets = metadata
+         block = int(batch.flashinfer_block_length or q.shape[2])
+-        state = _state(q.device, paged)
++        state = _state(q.device, paged, self.native, self.block_backend)
+         key = (
+             metadata,
+             block,
+             page_size,
+             q.dtype,
+-            FP8_DTYPE,
++            self.kv_dtype,
+             self.config.num_heads,
+             self.config.num_kv_heads,
+             self.config.head_dim,
+@@ -118,6 +128,17 @@ class FP8FlashInferAttention:
+         # copies are absent, replan rather than reusing another request's pages.
+         if state.key == key and (not paged or batch.flashinfer_paged_kv_indices_cpu):
+             return state.wrapper
++        if self.block_backend:
++            state.wrapper.plan(
++                metadata=metadata, kv_indptr=batch.flashinfer_kv_indptr,
++                kv_indices=batch.flashinfer_paged_kv_indices,
++                last_page_len=batch.flashinfer_paged_kv_last_page_len,
++                page_size=page_size, block_length=block,
++                num_qo_heads=self.config.num_heads, num_kv_heads=self.config.num_kv_heads,
++                head_dim=self.config.head_dim, sm_scale=self.config.scale,
++            )
++            state.key = key
++            return state.wrapper
+         mask = block_causal_mask(q_lens, kv_lens, offsets, kv_offsets, block, q.device)
+         kwargs = dict(
+             num_qo_heads=self.config.num_heads,
+@@ -149,22 +170,26 @@ class FP8FlashInferAttention:
+     def forward_paged(self, q, k, v, past, batch, k_scale, v_scale):
+         from flux_kernel.ops.kv_cache import quantize_scatter_kv
+ 
+-        if past is None or any(t.dtype != FP8_DTYPE for t in past):
+-            raise TypeError("FP8 paged attention requires FP8 KV pages")
++        if past is None or any(t.dtype != self.kv_dtype for t in past):
++            raise TypeError(f"Paged attention requires {self.kv_dtype} KV pages")
+         if batch.flashinfer_slot_mapping is None:
+             raise ValueError("FP8 paged attention requires slot_mapping")
+         metadata = self._metadata(q, batch, batch.use_flashinfer_paged_prefill)
+         lengths = metadata[0]
+         slots = batch.flashinfer_slot_mapping.reshape(q.shape[0], -1)
+         for i, length in enumerate(lengths):
+-            quantize_scatter_kv(
+-                k[i, :, :length],
+-                v[i, :, :length],
+-                past,
+-                slots[i, :length],
+-                k_scale,
+-                v_scale,
+-            )
++            if self.kv_dtype == FP8_DTYPE:
++                quantize_scatter_kv(
++                    k[i, :, :length], v[i, :, :length], past,
++                    slots[i, :length], k_scale, v_scale,
++                )
++            else:
++                # Identical BF16 cache writes for the explicit FA2/FA3 comparison.
++                page_size = int(past[0].shape[1])
++                row_slots = slots[i, :length].long()
++                pages, offsets = row_slots // page_size, row_slots % page_size
++                past[0][pages, offsets] = k[i, :, :length].transpose(0, 1)
++                past[1][pages, offsets] = v[i, :, :length].transpose(0, 1)
+         packed_q = _pack(q, lengths)
+         if batch.flashinfer_full_prefill_graph:
+             output = batch.flashinfer_cuda_graph_runner.run_attention(
+diff --git a/python/fluxserve/backend/layers/kv_quantization.py b/python/fluxserve/backend/layers/kv_quantization.py
+index 0aded8f..054ab26 100644
+--- a/python/fluxserve/backend/layers/kv_quantization.py
++++ b/python/fluxserve/backend/layers/kv_quantization.py
+@@ -20,6 +20,14 @@ FP8_MAX = 448.0
+ 
+ 
+ def add_kv_cache_arguments(parser):
++    parser.add_argument(
++        "--flashinfer-kernel-backend", choices=("auto", "fa2", "fa3"), default="auto",
++        help="Pin the FlashInfer kernel for paged attention; explicit BF16 paths share block/page handling.",
++    )
++    parser.add_argument(
++        "--attention-compute-dtype", choices=("bf16", "fp8"), default="bf16",
++        help="Attention math: bf16 (existing paths) or native Hopper FP8 (FlashInfer paged FP8 KV).",
++    )
+     parser.add_argument(
+         "--kv-cache-dtype",
+         choices=("auto", "bf16", "fp8_e4m3", "fp8"),
+@@ -272,9 +280,11 @@ class KVCalibrationObserver:
+         }
+ 
+ 
+-def configure_kv_attention(model, config, observer=None):
++def configure_kv_attention(model, config, observer=None, *, attention_compute_dtype="bf16", flashinfer_kernel_backend="auto"):
+     for module in model.modules():
+         attention = getattr(module, "attention_forward", None)
+         if attention is not None:
+             attention.kv_quantization = config
+             attention.kv_observer = observer
++            attention.attention_compute_dtype = attention_compute_dtype
++            attention.flashinfer_kernel_backend = flashinfer_kernel_backend
+diff --git a/python/fluxserve/bench_offline.py b/python/fluxserve/bench_offline.py
+index 64eeb3b..2dec9c3 100644
+--- a/python/fluxserve/bench_offline.py
++++ b/python/fluxserve/bench_offline.py
+@@ -300,6 +300,8 @@ def build_runner_config(args, batch_info):
+         low_threshold=args.low_threshold,
+         use_credit=args.use_credit,
+         attention_backend=args.attention_backend,
++        attention_compute_dtype=getattr(args, "attention_compute_dtype", "bf16"),
++        flashinfer_kernel_backend=getattr(args, "flashinfer_kernel_backend", "auto"),
+         flashinfer_decode_batch_mode=getattr(
+             args, "flashinfer_decode_batch_mode", "max_batch"
+         ),
+@@ -831,6 +833,7 @@ def _write_memory_and_graph_metrics(
+     graph_cache = getattr(graph, "past_key_values", None)
+     flashinfer_graph = getattr(runner, "flashinfer_graph_runner", None)
+     capture_counts_after = _flashinfer_capture_counts(runner)
++    from fluxserve.backend.layers.attention.native_fp8 import observed_block_kernels
+     parameter_bytes_by_dtype = {}
+     if hasattr(runner.model, "parameters"):
+         for parameter in runner.model.parameters():
+@@ -843,6 +846,7 @@ def _write_memory_and_graph_metrics(
+         "rank": rank,
+         "local_generation_seconds": local_generation_seconds,
+         "parameter_bytes_by_dtype": parameter_bytes_by_dtype,
++        "observed_block_attention_kernels": observed_block_kernels(),
+         "kv_data_bytes": kv_bytes,
+         "graph_input_kv_bytes": graph_cache.nbytes if isinstance(graph_cache, torch.Tensor) else 0,
+         "peak_allocated_bytes": torch.cuda.max_memory_allocated(),
+@@ -870,6 +874,14 @@ def _write_memory_and_graph_metrics(
+             "num_hidden_layers": getattr(getattr(runner, "model_config", None), "num_hidden_layers", None),
+             "kv_scale_source": getattr(quant, "source", "none"),
+             "attention_backend": args.attention_backend,
++            "attention_compute_dtype": getattr(args, "attention_compute_dtype", "bf16"),
++            "flashinfer_kernel_backend": getattr(args, "flashinfer_kernel_backend", "auto"),
++            "attention_kernel": (
++                "flashinfer-fa3-fp8" if getattr(args, "attention_compute_dtype", "bf16") == "fp8"
++                else "flashinfer-fa2-fp8-kv" if args.attention_backend == "flashinfer" and getattr(quant, "dtype", "bf16") == "fp8_e4m3"
++                else f"flashinfer-{args.flashinfer_kernel_backend}-bf16" if getattr(args, "flashinfer_kernel_backend", "auto") != "auto"
++                else args.attention_backend
++            ),
+             "nfe": batch_info.total_forward,
+             "generated_tokens": batch_info.total_token,
+             "generation_seconds": batch_info.total_time,
+@@ -1116,6 +1128,8 @@ def calibrate_kv_cache(args) -> None:
+     args.attention_backend = "sdpa"
+     args.attention_backend_explicit = True
+     args.kv_cache_dtype = "bf16"
++    args.attention_compute_dtype = "bf16"
++    args.flashinfer_kernel_backend = "auto"
+     args.kv_cache_scales = None
+     args.use_cuda_graph = False
+     args.use_prefill_cuda_graph = False
+diff --git a/python/fluxserve/cli.py b/python/fluxserve/cli.py
+index 9c4b571..2dcf23d 100644
+--- a/python/fluxserve/cli.py
++++ b/python/fluxserve/cli.py
+@@ -474,6 +474,8 @@ def _serve_worker(args, *, init_method: str = "env://") -> None:
+             cuda_graph_capture_batch_sizes=graph_capture_batch_sizes,
+             cuda_graph_capture_sizes=graph_capture_sizes,
+             attention_backend=args.attention_backend,
++            attention_compute_dtype=args.attention_compute_dtype,
++            flashinfer_kernel_backend=args.flashinfer_kernel_backend,
+             flashinfer_decode_batch_mode=args.flashinfer_decode_batch_mode,
+             flashinfer_prefill_mode=args.flashinfer_prefill_mode,
+             flashinfer_cache_mode=args.flashinfer_cache_mode,
+diff --git a/test/runtime/test_kv_quantization_cuda.py b/test/runtime/test_kv_quantization_cuda.py
+index ce76497..6dc5129 100644
+--- a/test/runtime/test_kv_quantization_cuda.py
++++ b/test/runtime/test_kv_quantization_cuda.py
+@@ -253,16 +253,17 @@ def test_flashinfer_paged_partial_prompt_and_ragged(layer, dtype):
+ 
+ 
+ @pytest.mark.parametrize("mode", ["decomposed", "padded"])
+-@pytest.mark.parametrize("dtype", ["bf16", "fp8_e4m3"])
++@pytest.mark.parametrize("dtype", ["bf16", "fp8_e4m3", "fp8_compute", "bf16_fa2", "bf16_fa3"])
+ def test_flashinfer_runner_graph_request_switch_lengths_and_cleanup(mode, dtype, monkeypatch, request):
+     pytest.importorskip("flashinfer")
+-    # The full mixed backend/KV/Graph suite triggers an illegal access in native
+-    # BF16 padded mode, although simpler mode-switch sequences pass. The exact
+-    # interaction is unresolved (see docs/experiments/flashinfer-runtime.md).
+-    # Serving fixes its configuration for each process. Test native padded in a
+-    # fresh process with real capture/replay and cleanup, avoiding contamination.
++    # Mixed backend/KV/Graph suites can poison FlashInfer's process state:
++    # previously BF16 padded raised an illegal access; after native FA3 FP8,
++    # BF16 decomposed can hang too. The interaction remains unresolved (see
++    # docs/experiments/flashinfer-runtime.md). Serving fixes its configuration
++    # per process. Exercise each configuration in a fresh process with real
++    # capture/replay and cleanup, including changes of lengths and requests.
+     child_flag = "FLUXSERVE_TEST_NATIVE_GRAPH_CHILD"
+-    if dtype == "bf16" and mode == "padded" and os.environ.get(child_flag) != "1":
++    if os.environ.get(child_flag) != "1":
+         result = subprocess.run(
+             [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider",
+              f"{__file__}::{request.node.name}"],
+@@ -288,9 +289,15 @@ def test_flashinfer_runner_graph_request_switch_lengths_and_cleanup(mode, dtype,
+ 
+         def __init__(self):
+             self.layers = [attention(0), attention(1)]
+-            if dtype == "bf16":
++            if dtype == "fp8_compute":
++                if torch.cuda.get_device_capability()[0] != 9:
++                    pytest.skip("Native FP8 requires Hopper")
++                for layer in self.layers:
++                    layer.attention_compute_dtype = "fp8"
++            if dtype.startswith("bf16"):
+                 for layer in self.layers:
+                     layer.kv_quantization = KVQuantizationConfig()
++                    layer.flashinfer_kernel_backend = dtype.split("_")[1] if "_" in dtype else "auto"
+             self.channels = torch.arange(512, device="cuda").float().view(1, 1, 512)
+ 
+         def __call__(
+@@ -333,7 +340,11 @@ def test_flashinfer_runner_graph_request_switch_lengths_and_cleanup(mode, dtype,
+         block_length=64,
+         max_length=256,
+         decoder=SimpleNamespace(mask_id=7),
+-        runner_config=SimpleNamespace(decode_cuda_graph_mode=mode),
++        runner_config=SimpleNamespace(
++            decode_cuda_graph_mode=mode,
++            attention_compute_dtype="fp8" if dtype == "fp8_compute" else "bf16",
++            flashinfer_kernel_backend=dtype.split("_")[1] if dtype.startswith("bf16_") else "auto",
++        ),
+         kv_quantization=model.layers[0].kv_quantization,
+         tp_group=SimpleNamespace(barrier=lambda: None),
+     )

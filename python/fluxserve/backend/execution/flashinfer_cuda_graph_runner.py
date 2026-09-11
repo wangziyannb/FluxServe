@@ -347,7 +347,9 @@ class FlashInferCudaGraphRunner:
             raise RuntimeError("Full-prefill CUDA graph received unsupported length")
         cache = runner.past_key_values
         key = (bucket, cache.data.data_ptr(), input_ids.dtype, cache.data.dtype,
-               getattr(getattr(runner, "kv_quantization", None), "signature", None))
+               getattr(getattr(runner, "kv_quantization", None), "signature", None),
+               getattr(runner.runner_config, "attention_compute_dtype", "bf16"),
+               getattr(runner.runner_config, "flashinfer_kernel_backend", "auto"))
         entry = self._graphs.get(key)
         if entry is None:
             entry = self._capture_llada2_prefill(runner, bucket, key)
@@ -362,7 +364,12 @@ class FlashInferCudaGraphRunner:
         entry.slot_mapping[:q_len].copy_(real_slots[:q_len])
         entry.slot_mapping[q_len:].copy_(entry.dummy_slot_mapping[q_len:])
         mask_key = (q_len, bucket, int(runner.block_length))
-        if entry.last_mask_length != q_len:
+        if getattr(entry.wrapper, "block_paged", False):
+            indptr = torch.tensor([0, actual_pages.numel()], dtype=torch.int32, device=self.device)
+            last = torch.tensor([(q_len - 1) % cache.page_size + 1], dtype=torch.int32, device=self.device)
+            offsets = torch.zeros(1, dtype=torch.int32, device=self.device)
+            entry.wrapper.update_metadata(indptr, entry.kv_indices, last, offsets, offsets)
+        elif entry.last_mask_length != q_len:
             entry.wrapper._custom_mask_buf.copy_(self._packed_masks[mask_key])
             entry.last_mask_length = q_len
         entry.graph.replay()
@@ -474,7 +481,9 @@ class FlashInferCudaGraphRunner:
             batch_sizes = self.decode_capture_batch_sizes
         for batch_size in sorted(set(map(int, batch_sizes)), reverse=True):
             key = (batch_size, cache.data.data_ptr(), torch.long, cache.data.dtype,
-                   getattr(getattr(runner, "kv_quantization", None), "signature", None))
+                   getattr(getattr(runner, "kv_quantization", None), "signature", None),
+                   getattr(runner.runner_config, "attention_compute_dtype", "bf16"),
+                   getattr(runner.runner_config, "flashinfer_kernel_backend", "auto"))
             if key not in self._decode_graphs:
                 self._capture_llada2_decode(runner, batch_size, key)
         self.capture_time_s += time.perf_counter() - started
@@ -688,7 +697,9 @@ class FlashInferCudaGraphRunner:
         batch_size = graph_bucket
         cache = runner.past_key_values
         key = (batch_size, cache.data.data_ptr(), input_ids.dtype, cache.data.dtype,
-               getattr(getattr(runner, "kv_quantization", None), "signature", None))
+               getattr(getattr(runner, "kv_quantization", None), "signature", None),
+               getattr(runner.runner_config, "attention_compute_dtype", "bf16"),
+               getattr(runner.runner_config, "flashinfer_kernel_backend", "auto"))
         entry = self._decode_graphs.get(key)
         if entry is None:
             entry = self._capture_llada2_decode(runner, batch_size, key)
@@ -779,6 +790,11 @@ class FlashInferCudaGraphRunner:
         entry.kv_offsets.zero_()
         entry.append_batch_indices.copy_(padded_append_batch_indices)
         entry.append_positions.copy_(padded_append_positions)
+        if getattr(entry.wrapper, "block_paged", False):
+            entry.wrapper.update_metadata(
+                entry.kv_indptr, entry.kv_indices, entry.last_page_len,
+                entry.q_offsets, entry.kv_offsets,
+            )
         entry.graph.replay()
         self.decode_replay_count += 1
         self.decode_component_replay_count += 1
@@ -837,7 +853,10 @@ class FlashInferCudaGraphRunner:
             batch_size, dtype=torch.int32, device=self.device
         )
         fp8 = cache.data.dtype == torch.float8_e4m3fn
-        native_graph = not fp8 and getattr(
+        compute_dtype = getattr(runner.runner_config, "attention_compute_dtype", "bf16")
+        kernel_backend = getattr(runner.runner_config, "flashinfer_kernel_backend", "auto")
+        block_paged = compute_dtype == "fp8" or (cache.data.dtype == torch.bfloat16 and kernel_backend != "auto")
+        native_graph = not fp8 and not block_paged and getattr(
             runner.runner_config, "decode_cuda_graph_mode", "decomposed"
         ) == "padded"
         wrapper_kwargs = dict(
@@ -859,9 +878,14 @@ class FlashInferCudaGraphRunner:
                 block_extend=True,
                 block_size=block_length,
             )
-        wrapper = flashinfer.BatchPrefillWithPagedKVCacheWrapper(
-            self._workspace, **wrapper_kwargs
-        )
+        if block_paged:
+            from fluxserve.backend.layers.attention.native_fp8 import BlockPagedWrapper
+            wrapper = BlockPagedWrapper(self._workspace, compute_dtype=compute_dtype,
+                                        backend="fa3" if kernel_backend == "auto" else kernel_backend)
+        else:
+            wrapper = flashinfer.BatchPrefillWithPagedKVCacheWrapper(
+                self._workspace, **wrapper_kwargs
+            )
         input_ids = torch.full(
             (batch_size, block_length), int(runner.decoder.mask_id), dtype=torch.long,
             device=self.device,
@@ -886,7 +910,7 @@ class FlashInferCudaGraphRunner:
             ).unsqueeze(0)
         ).reshape(-1)
         plan_kwargs = {}
-        if fp8:
+        if fp8 and not block_paged:
             from fluxserve.backend.layers.attention.fp8_flashinfer import block_causal_mask
             plan_kwargs["custom_mask"] = block_causal_mask(
                 (block_length,) * batch_size, (max_kv_len,) * batch_size,
@@ -894,23 +918,22 @@ class FlashInferCudaGraphRunner:
             )
         if native_graph:
             plan_kwargs.update(q_offsets=q_offsets, kv_offsets=kv_offsets)
-        wrapper.plan(
-            qo_indptr, kv_indptr, kv_indices, last_page_len,
-            num_qo_heads=runner.model.model.config.num_attention_heads
-            // get_attention_tp_size(),
-            num_kv_heads=max(
-                1, runner.model.model.config.num_key_value_heads
-                // get_attention_tp_size(),
-            ),
-            head_dim_qk=runner.model.model.config.hidden_size
-            // runner.model.model.config.num_attention_heads,
-            page_size=page_size,
-            causal=False,
-            q_data_type=torch.bfloat16,
-            kv_data_type=cache.data.dtype,
-            disable_split_kv=True,
-            **plan_kwargs,
+        plan_geometry = dict(
+            num_qo_heads=runner.model.model.config.num_attention_heads // get_attention_tp_size(),
+            num_kv_heads=max(1, runner.model.model.config.num_key_value_heads // get_attention_tp_size()),
+            head_dim=runner.model.model.config.hidden_size // runner.model.model.config.num_attention_heads,
         )
+        if block_paged:
+            wrapper.plan(
+                metadata=((block_length,) * batch_size, (max_kv_len,) * batch_size,
+                          (q_offset,) * batch_size, (0,) * batch_size),
+                kv_indptr=kv_indptr, kv_indices=kv_indices, last_page_len=last_page_len,
+                page_size=page_size, block_length=block_length, **plan_geometry,
+                sm_scale=plan_geometry["head_dim"] ** -0.5, use_cuda_graph=True,
+            )
+        else:
+            self._plan_decode_wrapper(wrapper, runner, qo_indptr, kv_indptr, kv_indices,
+                                      last_page_len, page_size, cache.data.dtype, plan_kwargs)
         forward_batch = ForwardBatch(
             forward_mode=ForwardMode.DECODE,
             use_flashinfer_paged_decode=True,
@@ -958,9 +981,9 @@ class FlashInferCudaGraphRunner:
             torch.cuda.CUDAGraph(), input_ids, position_ids, kv_indptr, kv_indices,
             last_page_len, slot_mapping, q_offsets, kv_offsets,
             append_batch_indices, append_positions, wrapper, placeholder,
-            fp8_max_kv_len=max_kv_len if fp8 else None,
+            fp8_max_kv_len=max_kv_len if fp8 and not block_paged else None,
         )
-        if fp8:
+        if fp8 and not block_paged:
             # Compile metadata kernels before graph capture, using dummy inputs.
             from flux_kernel.ops.kv_cache import update_fp8_decode_metadata
             update_fp8_decode_metadata(
@@ -988,11 +1011,29 @@ class FlashInferCudaGraphRunner:
         self._decode_capture_counts_by_bs[batch_size] = (
             self._decode_capture_counts_by_bs.get(batch_size, 0) + 1
         )
-        self.log(
-            "CUDA graph captured: dynamic paged decode batch_size=%d layers=%d",
-            batch_size, cache.num_layers,
-        )
+        self.log("CUDA graph captured: dynamic paged decode batch_size=%d", batch_size)
         return entry
+
+    @staticmethod
+    def _plan_decode_wrapper(wrapper, runner, qo_indptr, kv_indptr, kv_indices,
+                             last_page_len, page_size, kv_dtype, plan_kwargs):
+        wrapper.plan(
+            qo_indptr, kv_indptr, kv_indices, last_page_len,
+            num_qo_heads=runner.model.model.config.num_attention_heads
+            // get_attention_tp_size(),
+            num_kv_heads=max(
+                1, runner.model.model.config.num_key_value_heads
+                // get_attention_tp_size(),
+            ),
+            head_dim_qk=runner.model.model.config.hidden_size
+            // runner.model.model.config.num_attention_heads,
+            page_size=page_size,
+            causal=False,
+            q_data_type=torch.bfloat16,
+            kv_data_type=kv_dtype,
+            disable_split_kv=True,
+            **plan_kwargs,
+        )
 
     def _capture_llada2_prefill(
         self, runner, bucket: int, key: tuple
@@ -1003,9 +1044,17 @@ class FlashInferCudaGraphRunner:
         cache = runner.past_key_values
         page_size = int(cache.page_size)
         bucket_pages = bucket // page_size
-        wrapper = flashinfer.BatchPrefillWithPagedKVCacheWrapper(
-            self._workspace, kv_layout="NHD", backend="fa2"
-        )
+        compute_dtype = getattr(runner.runner_config, "attention_compute_dtype", "bf16")
+        kernel_backend = getattr(runner.runner_config, "flashinfer_kernel_backend", "auto")
+        block_paged = compute_dtype == "fp8" or (cache.data.dtype == torch.bfloat16 and kernel_backend != "auto")
+        if block_paged:
+            from fluxserve.backend.layers.attention.native_fp8 import BlockPagedWrapper
+            wrapper = BlockPagedWrapper(self._workspace, compute_dtype=compute_dtype,
+                                        backend="fa3" if kernel_backend == "auto" else kernel_backend)
+        else:
+            wrapper = flashinfer.BatchPrefillWithPagedKVCacheWrapper(
+                self._workspace, kv_layout="NHD", backend="fa2"
+            )
         input_ids = torch.full(
             (1, bucket), int(runner.decoder.mask_id), dtype=torch.long, device=self.device
         )
@@ -1022,51 +1071,63 @@ class FlashInferCudaGraphRunner:
         qo_indptr = torch.tensor([0, bucket], dtype=torch.int32, device=self.device)
         kv_indptr = torch.tensor([0, bucket_pages], dtype=torch.int32, device=self.device)
         last_page_len = torch.tensor([page_size], dtype=torch.int32, device=self.device)
-        q_pos = torch.arange(bucket, device=self.device)
-        k_pos = torch.arange(bucket, device=self.device)
-        mask = (q_pos[:, None] // runner.block_length) >= (
-            k_pos[None, :] // runner.block_length
-        )
-        mask_indptr = torch.tensor([0, bucket * bucket], dtype=torch.int32, device=self.device)
-        packed_mask, _ = segment_packbits(mask.flatten(), mask_indptr, bitorder="little")
-        previous_bucket = max(
-            (size for size in self.capture_sizes if size < bucket),
-            default=0,
-        )
-        for actual_length in range(
-            max(1, previous_bucket + 1),
-            bucket + 1,
-        ):
-            actual_mask = mask & (k_pos[None, :] < actual_length)
-            actual_mask[actual_length:] = False
-            actual_packed_mask, _ = segment_packbits(
-                actual_mask.flatten(), mask_indptr, bitorder="little"
+        if block_paged:
+            head_dim = runner.model.model.config.hidden_size // runner.model.model.config.num_attention_heads
+            wrapper.plan(
+                metadata=((bucket,), (bucket,), (0,), (0,)),
+                kv_indptr=kv_indptr, kv_indices=kv_indices, last_page_len=last_page_len,
+                page_size=page_size, block_length=int(runner.block_length),
+                num_qo_heads=runner.model.model.config.num_attention_heads // get_attention_tp_size(),
+                num_kv_heads=max(1, runner.model.model.config.num_key_value_heads // get_attention_tp_size()),
+                head_dim=head_dim, sm_scale=head_dim ** -0.5, use_cuda_graph=True,
             )
-            self._packed_masks[
-                (actual_length, bucket, int(runner.block_length))
-            ] = actual_packed_mask
-        wrapper.plan(
-            qo_indptr,
-            kv_indptr,
-            kv_indices,
-            last_page_len,
-            num_qo_heads=runner.model.model.config.num_attention_heads
-            // get_attention_tp_size(),
-            num_kv_heads=max(
-                1,
-                runner.model.model.config.num_key_value_heads
+            packed_mask = torch.empty(0, dtype=torch.uint8, device=self.device)
+        else:
+            q_pos = torch.arange(bucket, device=self.device)
+            k_pos = torch.arange(bucket, device=self.device)
+            mask = (q_pos[:, None] // runner.block_length) >= (
+                k_pos[None, :] // runner.block_length
+            )
+            mask_indptr = torch.tensor([0, bucket * bucket], dtype=torch.int32, device=self.device)
+            packed_mask, _ = segment_packbits(mask.flatten(), mask_indptr, bitorder="little")
+            previous_bucket = max(
+                (size for size in self.capture_sizes if size < bucket),
+                default=0,
+            )
+            for actual_length in range(
+                max(1, previous_bucket + 1),
+                bucket + 1,
+            ):
+                actual_mask = mask & (k_pos[None, :] < actual_length)
+                actual_mask[actual_length:] = False
+                actual_packed_mask, _ = segment_packbits(
+                    actual_mask.flatten(), mask_indptr, bitorder="little"
+                )
+                self._packed_masks[
+                    (actual_length, bucket, int(runner.block_length))
+                ] = actual_packed_mask
+            wrapper.plan(
+                qo_indptr,
+                kv_indptr,
+                kv_indices,
+                last_page_len,
+                num_qo_heads=runner.model.model.config.num_attention_heads
                 // get_attention_tp_size(),
-            ),
-            head_dim_qk=runner.model.model.config.hidden_size
-            // runner.model.model.config.num_attention_heads,
-            page_size=page_size,
-            custom_mask=mask.flatten(),
-            causal=False,
-            q_data_type=torch.bfloat16,
-            kv_data_type=cache.data.dtype,
-            disable_split_kv=True,
-        )
-        wrapper._custom_mask_buf.copy_(packed_mask)
+                num_kv_heads=max(
+                    1,
+                    runner.model.model.config.num_key_value_heads
+                    // get_attention_tp_size(),
+                ),
+                head_dim_qk=runner.model.model.config.hidden_size
+                // runner.model.model.config.num_attention_heads,
+                page_size=page_size,
+                custom_mask=mask.flatten(),
+                causal=False,
+                q_data_type=torch.bfloat16,
+                kv_data_type=cache.data.dtype,
+                disable_split_kv=True,
+            )
+            wrapper._custom_mask_buf.copy_(packed_mask)
         forward_batch = ForwardBatch(
             forward_mode=ForwardMode.EXTEND,
             use_flashinfer_paged_prefill=True,
