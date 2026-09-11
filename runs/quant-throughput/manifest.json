@@ -1,0 +1,270 @@
+{
+  "created": "2026-09-10T19:51:00.888337+00:00",
+  "commit": "c86f105b5daf6201099c9f9b2918ed6e1ff17a98",
+  "models": {
+    "fp8": {
+      "repo": "thnkinbtfly/llada2.0-flash-fp8",
+      "revision": "85bd9f38034aa46f93135676189acec4d7fc40d3",
+      "path": "/workspace/.hf_home/hub/models--thnkinbtfly--llada2.0-flash-fp8/snapshots/85bd9f38034aa46f93135676189acec4d7fc40d3",
+      "dimensions": {
+        "num_hidden_layers": 32,
+        "hidden_size": 4096,
+        "num_attention_heads": 32,
+        "num_key_value_heads": 4,
+        "num_experts": 256
+      },
+      "weight_metadata": {
+        "total_parameters": 102889697280,
+        "total_size": 104210336512
+      },
+      "shards": {
+        "model-00001-of-00021.safetensors": 4997844496,
+        "model-00002-of-00021.safetensors": 4997947648,
+        "model-00003-of-00021.safetensors": 5000060712,
+        "model-00004-of-00021.safetensors": 4997947776,
+        "model-00005-of-00021.safetensors": 5000060592,
+        "model-00006-of-00021.safetensors": 4997947904,
+        "model-00007-of-00021.safetensors": 5000063368,
+        "model-00008-of-00021.safetensors": 4997951584,
+        "model-00009-of-00021.safetensors": 5000063896,
+        "model-00010-of-00021.safetensors": 4997951712,
+        "model-00011-of-00021.safetensors": 5000063768,
+        "model-00012-of-00021.safetensors": 4997951840,
+        "model-00013-of-00021.safetensors": 5000063672,
+        "model-00014-of-00021.safetensors": 4997951936,
+        "model-00015-of-00021.safetensors": 5000063672,
+        "model-00016-of-00021.safetensors": 4997951936,
+        "model-00017-of-00021.safetensors": 5000063688,
+        "model-00018-of-00021.safetensors": 5000064496,
+        "model-00019-of-00021.safetensors": 4997951096,
+        "model-00020-of-00021.safetensors": 5000064360,
+        "model-00021-of-00021.safetensors": 4238619704
+      },
+      "metadata_sha256": {
+        "chat_template.jinja": "a503d55b21709d881b07ee2e9d8ce29505fa95d9f758379a9fc4ccc94272734a",
+        "config.json": "125d5a2fd1925286c29836ec8d830d07d59a1990ad1aef6959eb3b181f09bd1f",
+        "configuration_llada2_moe.py": "deb40ea9d41e9c23f506fa478b8f5a4ab74a9a0b66bb74786e1eb17eb59de97f",
+        "hf_quant_config.json": "89d991877e5fac17993b6c7c7046d1ac4be923ee9eaacbf496100ba747135cfb",
+        "generation_config.json": "7751e680227e965c974006fefcbb592c49c92ccc7e1018d220828a8fd2014884",
+        "model.safetensors.index.json": "a51223146ce06ca0cabc1a13f7897bc3b79866b132524df17766489c8df59039",
+        "modeling_llada2_moe.py": "4bbf8eb1da84a3e0a8b580ec1fbebd457d85d96fee3978164330f355b387354e",
+        "special_tokens_map.json": "47e2eebf62adf7982a3187edc58c6e2a334d5a1447fbe546947905c739970626",
+        "tokenizer_config.json": "04ee1e268dc25d5aa64bf541515eb983db2dce4d66390348339178c97721ade4",
+        "tokenizer.json": "878eb900ea4a42da7e54bc18ad38352bec005bbfd81bdf76a5ecf1aad1093a6c"
+      }
+    },
+    "bf16": {
+      "repo": "inclusionAI/LLaDA2.0-flash",
+      "revision": "744c3f8c6c8317d2377d6d16d8a3d4be2caef563",
+      "path": "/workspace/.hf_home/hub/models--inclusionAI--LLaDA2.0-flash/snapshots/744c3f8c6c8317d2377d6d16d8a3d4be2caef563",
+      "dimensions": {
+        "num_hidden_layers": 32,
+        "hidden_size": 4096,
+        "num_attention_heads": 32,
+        "num_key_value_heads": 4,
+        "num_experts": 256
+      },
+      "weight_metadata": {
+        "total_size": 205779410432
+      },
+      "shards": {
+        "model-00001-of-00042.safetensors": 4995484480,
+        "model-00002-of-00042.safetensors": 4993409784,
+        "model-00003-of-00042.safetensors": 4993409464,
+        "model-00004-of-00042.safetensors": 4999684432,
+        "model-00005-of-00042.safetensors": 4993409648,
+        "model-00006-of-00042.safetensors": 4993409864,
+        "model-00007-of-00042.safetensors": 4993409424,
+        "model-00008-of-00042.safetensors": 4999684472,
+        "model-00009-of-00042.safetensors": 4993409576,
+        "model-00010-of-00042.safetensors": 4993409824,
+        "model-00011-of-00042.safetensors": 4993409512,
+        "model-00012-of-00042.safetensors": 4999684504,
+        "model-00013-of-00042.safetensors": 4993410040,
+        "model-00014-of-00042.safetensors": 4993410376,
+        "model-00015-of-00042.safetensors": 4993410232,
+        "model-00016-of-00042.safetensors": 4999685104,
+        "model-00017-of-00042.safetensors": 4993410040,
+        "model-00018-of-00042.safetensors": 4993410312,
+        "model-00019-of-00042.safetensors": 4993410328,
+        "model-00020-of-00042.safetensors": 4993410080,
+        "model-00021-of-00042.safetensors": 4999685016,
+        "model-00022-of-00042.safetensors": 4993410272,
+        "model-00023-of-00042.safetensors": 4993410416,
+        "model-00024-of-00042.safetensors": 4993410032,
+        "model-00025-of-00042.safetensors": 4999685048,
+        "model-00026-of-00042.safetensors": 4993410200,
+        "model-00027-of-00042.safetensors": 4993410432,
+        "model-00028-of-00042.safetensors": 4993410056,
+        "model-00029-of-00042.safetensors": 4999685088,
+        "model-00030-of-00042.safetensors": 4993410128,
+        "model-00031-of-00042.safetensors": 4993410392,
+        "model-00032-of-00042.safetensors": 4993410168,
+        "model-00033-of-00042.safetensors": 4999685104,
+        "model-00034-of-00042.safetensors": 4993410064,
+        "model-00035-of-00042.safetensors": 4993410336,
+        "model-00036-of-00042.safetensors": 4993410288,
+        "model-00037-of-00042.safetensors": 4999685104,
+        "model-00038-of-00042.safetensors": 4993410024,
+        "model-00039-of-00042.safetensors": 4993410296,
+        "model-00040-of-00042.safetensors": 4993410368,
+        "model-00041-of-00042.safetensors": 4699812800,
+        "model-00042-of-00042.safetensors": 1287670696
+      },
+      "metadata_sha256": {
+        "config.json": "ac35e9dc8313f49b2600da2a8b3ec31c53c01d22a5943ec26c8e21f8e208ab07",
+        "configuration_llada2_moe.py": "deb40ea9d41e9c23f506fa478b8f5a4ab74a9a0b66bb74786e1eb17eb59de97f",
+        "model.safetensors.index.json": "b7f0e817b249aa61bbd76541f772e0f8bc810aacc1c823a185b3ff48580f1ba6",
+        "modeling_llada2_moe.py": "4bbf8eb1da84a3e0a8b580ec1fbebd457d85d96fee3978164330f355b387354e",
+        "special_tokens_map.json": "dc0d1b183df92acde02863003f000672b18fe59223457215e87de51a76e99ae4",
+        "tokenizer_config.json": "053a74db9233c69408762c4e70043cf9811504d1a59220adb0d00c956cf7749c",
+        "tokenizer.json": "0a1db22fe3dfb28f9b2be6d87f472af371b50235d7f5366ecac14b52ff8c002b"
+      }
+    }
+  },
+  "source_hashes": {
+    "python/fluxserve/bench_offline.py": "f2e2a0bf9856741079bbbc20a548d934563d992748e9b32eb8e688c79dd7b5d5",
+    "python/fluxserve/backend/execution/runners/base.py": "1b33581b3d97851cbd3ee79a079285e4a23fdbd012c93090b9df0cc864826fbe"
+  },
+  "dataset_sha256": "768de5481aa2fd5cc2fc5332b23eef494635a7ba11a29537742e3409eda73fcd",
+  "calibration_dataset_sha256": "e4e7d9330fd6673a8cbb17554c7ab80c3e97a6a9a99035f9b2e14f96a74cdbb7",
+  "versions": {
+    "torch": "2.8.0+cu128",
+    "flashinfer-python": "0.6.18",
+    "transformers": "5.15.1",
+    "triton": "3.4.0",
+    "nvidia-cutlass-dsl": "4.7.0"
+  },
+  "topology": "\t\u001b[4mGPU0\tGPU1\tGPU2\tGPU3\tCPU Affinity\tNUMA Affinity\tGPU NUMA ID\u001b[0m\nGPU0\t X \tNV18\tNV18\tNV18\t0,2,4,6,8,10\t0\t\tN/A\nGPU1\tNV18\t X \tNV18\tNV18\t0,2,4,6,8,10\t0\t\tN/A\nGPU2\tNV18\tNV18\t X \tNV18\t0,2,4,6,8,10\t0\t\tN/A\nGPU3\tNV18\tNV18\tNV18\t X \t0,2,4,6,8,10\t0\t\tN/A\n\nLegend:\n\n  X    = Self\n  SYS  = Connection traversing PCIe as well as the SMP interconnect between NUMA nodes (e.g., QPI/UPI)\n  NODE = Connection traversing PCIe as well as the interconnect between PCIe Host Bridges within a NUMA node\n  PHB  = Connection traversing PCIe as well as a PCIe Host Bridge (typically the CPU)\n  PXB  = Connection traversing multiple PCIe bridges (without traversing the PCIe Host Bridge)\n  PIX  = Connection traversing at most a single PCIe bridge\n  NV#  = Connection traversing a bonded set of # NVLinks\n",
+  "hardware": "0, GPU-8b5f0306-a3c4-63cc-2e0b-83b2974e3ea3, NVIDIA H100 80GB HBM3, 81559, 560.35.05\n1, GPU-58c1c51a-9549-f2ef-112e-48da67910f44, NVIDIA H100 80GB HBM3, 81559, 560.35.05\n2, GPU-51834abf-2291-d6cd-966b-e603a29182d6, NVIDIA H100 80GB HBM3, 81559, 560.35.05\n3, GPU-26cd954c-8fe4-ec78-027b-ec7eca116003, NVIDIA H100 80GB HBM3, 81559, 560.35.05\n",
+  "cases": [
+    {
+      "weights": "bf16",
+      "kv": "bf16",
+      "gpus": 4,
+      "graph": false,
+      "name": "bf16-bf16-4gpu-eager"
+    },
+    {
+      "weights": "bf16",
+      "kv": "bf16",
+      "gpus": 4,
+      "graph": true,
+      "name": "bf16-bf16-4gpu-graph"
+    },
+    {
+      "weights": "fp8",
+      "kv": "bf16",
+      "gpus": 2,
+      "graph": false,
+      "name": "fp8-bf16-2gpu-eager"
+    },
+    {
+      "weights": "fp8",
+      "kv": "bf16",
+      "gpus": 2,
+      "graph": true,
+      "name": "fp8-bf16-2gpu-graph"
+    },
+    {
+      "weights": "fp8",
+      "kv": "bf16",
+      "gpus": 4,
+      "graph": false,
+      "name": "fp8-bf16-4gpu-eager"
+    },
+    {
+      "weights": "fp8",
+      "kv": "bf16",
+      "gpus": 4,
+      "graph": true,
+      "name": "fp8-bf16-4gpu-graph"
+    },
+    {
+      "weights": "fp8",
+      "kv": "fp8_e4m3",
+      "gpus": 2,
+      "graph": false,
+      "name": "fp8-fp8_e4m3-2gpu-eager"
+    },
+    {
+      "weights": "fp8",
+      "kv": "fp8_e4m3",
+      "gpus": 2,
+      "graph": true,
+      "name": "fp8-fp8_e4m3-2gpu-graph"
+    },
+    {
+      "weights": "fp8",
+      "kv": "fp8_e4m3",
+      "gpus": 4,
+      "graph": false,
+      "name": "fp8-fp8_e4m3-4gpu-eager"
+    },
+    {
+      "weights": "fp8",
+      "kv": "fp8_e4m3",
+      "gpus": 4,
+      "graph": true,
+      "name": "fp8-fp8_e4m3-4gpu-graph"
+    }
+  ],
+  "infeasible": [
+    {
+      "weights": "bf16",
+      "kv": "bf16",
+      "gpus": 1,
+      "status": "memory_infeasible",
+      "basis": "checkpoint_weight_capacity"
+    },
+    {
+      "weights": "bf16",
+      "kv": "bf16",
+      "gpus": 2,
+      "status": "memory_infeasible",
+      "basis": "checkpoint_weight_capacity"
+    },
+    {
+      "weights": "fp8",
+      "kv": "bf16",
+      "gpus": 1,
+      "status": "memory_infeasible",
+      "basis": "checkpoint_weight_capacity"
+    },
+    {
+      "weights": "fp8",
+      "kv": "fp8_e4m3",
+      "gpus": 1,
+      "status": "memory_infeasible",
+      "basis": "checkpoint_weight_capacity"
+    }
+  ],
+  "experiment_driver_sha256": "243b9ab0928a8ee709653dd6f3b14c409ef4fc5cf4d2870eaad2ba7e59d9bc43",
+  "benchmark_environment": {
+    "PYTHONUNBUFFERED": "1",
+    "CUDA_HOME": "/usr/local/cuda",
+    "CUDA_VISIBLE_DEVICES": "0,1,2,3",
+    "FLUX_KERNEL_CUDA_ARCH": "90a",
+    "TORCH_CUDA_ARCH_LIST": "9.0",
+    "MAX_JOBS": "4",
+    "CMAKE_BUILD_PARALLEL_LEVEL": "4",
+    "TOKENIZERS_PARALLELISM": "false",
+    "HF_HUB_OFFLINE": "1",
+    "TRANSFORMERS_OFFLINE": "1",
+    "OMP_NUM_THREADS": "2",
+    "OPENBLAS_NUM_THREADS": "2",
+    "TORCHINDUCTOR_COMPILE_THREADS": "4",
+    "FLUXSERVE_FLASHINFER_REV": "5ce4d077c33bbe167386cf5487a4a5bb4bcafbfd",
+    "FLASHINFER_WORKSPACE_BASE": "/workspace/FluxServe/.cache/fi018-cu128/flashinfer",
+    "TRITON_CACHE_DIR": "/workspace/FluxServe/.cache/cu128/triton",
+    "TORCHINDUCTOR_CACHE_DIR": "/workspace/FluxServe/.cache/cu128/inductor",
+    "TORCH_EXTENSIONS_DIR": "/workspace/FluxServe/.cache/cu128/torch-extensions",
+    "TVM_FFI_CACHE_DIR": "/workspace/FluxServe/.cache/cu128/tvm-ffi",
+    "CUDA_CACHE_PATH": "/workspace/FluxServe/.cache/cu128/cuda"
+  },
+  "acceptance_policy": {
+    "output_equality_required": false,
+    "reason": "User explicitly authorized throughput-priority evaluation with output, token count and NFE differences reported.",
+    "runtime_and_graph_checks_required": true
+  }
+}

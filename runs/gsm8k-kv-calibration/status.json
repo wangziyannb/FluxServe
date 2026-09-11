@@ -1,0 +1,14 @@
+{
+  "complete": {
+    "smoke": 14,
+    "measurements": 14
+  },
+  "stage": "measurements",
+  "case": "fp8-fp8_e4m3-gsm8k-train-4gpu-graph",
+  "processed": 1319,
+  "total": 1319,
+  "generation_seconds_so_far": 2169.82,
+  "tokens_so_far": 376608,
+  "last_log_line": "[2026-09-11 08:52:43] Forward: 65994, Time: 2170.088943533832, FPS: 30.414524994300834(29.729209863176354), TPS: 173.56658831187153(199.99343729639176), TPF: 5.706700609146286(0.84",
+  "case_status": "passed"
+}

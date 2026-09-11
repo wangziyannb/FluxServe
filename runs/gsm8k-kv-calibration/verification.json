@@ -1,0 +1,12 @@
+{
+  "status": "passed",
+  "complete_cases": 14,
+  "test_questions_per_case": 1319,
+  "total_scored_answers": 18466,
+  "total_tokens": 5207076,
+  "no_overlapping_gpu_runs": true,
+  "original_request_order": true,
+  "timing": "synchronized max rank per batch; graph captures/invalidation zero during generation",
+  "comparisons": 31,
+  "measurements_per_case": 1
+}

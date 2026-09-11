@@ -1,0 +1,17 @@
+{
+  "status": "passed",
+  "ranks": [
+    {
+      "rank": 0,
+      "local_seconds": 0.052760496037080884,
+      "maximum_seconds": 0.10293290205299854,
+      "cuda_event_seconds": 0.052694816589355466
+    },
+    {
+      "rank": 1,
+      "local_seconds": 0.10293290205299854,
+      "maximum_seconds": 0.10293290205299854,
+      "cuda_event_seconds": 0.10284809875488281
+    }
+  ]
+}

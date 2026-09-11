@@ -1,0 +1,26 @@
+{
+  "status": "passed",
+  "verified_cases": [
+    "bf16-bf16-none-4gpu-eager",
+    "bf16-bf16-none-4gpu-graph",
+    "fp8-bf16-none-2gpu-eager",
+    "fp8-bf16-none-2gpu-graph",
+    "fp8-bf16-none-4gpu-eager",
+    "fp8-bf16-none-4gpu-graph",
+    "fp8-fp8_e4m3-ultrachat-2gpu-eager",
+    "fp8-fp8_e4m3-ultrachat-2gpu-graph",
+    "fp8-fp8_e4m3-ultrachat-4gpu-eager",
+    "fp8-fp8_e4m3-ultrachat-4gpu-graph",
+    "fp8-fp8_e4m3-gsm8k-train-2gpu-eager",
+    "fp8-fp8_e4m3-gsm8k-train-2gpu-graph",
+    "fp8-fp8_e4m3-gsm8k-train-4gpu-eager",
+    "fp8-fp8_e4m3-gsm8k-train-4gpu-graph"
+  ],
+  "pending": [],
+  "verified_answers": 18466,
+  "verified_completion_tokens": 5207076,
+  "source_and_data_hashes_unchanged": true,
+  "evaluator_hashes_unchanged": true,
+  "both_scale_hashes_unchanged": true,
+  "actual_token_ids_match_reported_counts": true
+}

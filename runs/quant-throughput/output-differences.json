@@ -1,0 +1,3201 @@
+[
+  {
+    "label": "model_quantization",
+    "numerator": "fp8-bf16-4gpu-eager",
+    "denominator": "bf16-bf16-4gpu-eager",
+    "repeat": 1,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      54,
+      110,
+      8,
+      24,
+      62,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      49,
+      106,
+      8,
+      6,
+      62,
+      53,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "model_quantization",
+    "numerator": "fp8-bf16-4gpu-eager",
+    "denominator": "bf16-bf16-4gpu-eager",
+    "repeat": 2,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      54,
+      110,
+      8,
+      24,
+      62,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      49,
+      106,
+      8,
+      6,
+      62,
+      53,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "model_quantization",
+    "numerator": "fp8-bf16-4gpu-eager",
+    "denominator": "bf16-bf16-4gpu-eager",
+    "repeat": 3,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      54,
+      110,
+      8,
+      24,
+      62,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      49,
+      106,
+      8,
+      6,
+      62,
+      53,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "model_quantization",
+    "numerator": "fp8-bf16-4gpu-eager",
+    "denominator": "bf16-bf16-4gpu-eager",
+    "repeat": 4,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      54,
+      110,
+      8,
+      24,
+      62,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      49,
+      106,
+      8,
+      6,
+      62,
+      53,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "model_quantization",
+    "numerator": "fp8-bf16-4gpu-eager",
+    "denominator": "bf16-bf16-4gpu-eager",
+    "repeat": 5,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      54,
+      110,
+      8,
+      24,
+      62,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      49,
+      106,
+      8,
+      6,
+      62,
+      53,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "joint_quantization",
+    "numerator": "fp8-fp8_e4m3-4gpu-eager",
+    "denominator": "bf16-bf16-4gpu-eager",
+    "repeat": 1,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      54,
+      106,
+      8,
+      23,
+      3,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      49,
+      106,
+      8,
+      6,
+      62,
+      53,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "joint_quantization",
+    "numerator": "fp8-fp8_e4m3-4gpu-eager",
+    "denominator": "bf16-bf16-4gpu-eager",
+    "repeat": 2,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      54,
+      106,
+      8,
+      23,
+      3,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      49,
+      106,
+      8,
+      6,
+      62,
+      53,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "joint_quantization",
+    "numerator": "fp8-fp8_e4m3-4gpu-eager",
+    "denominator": "bf16-bf16-4gpu-eager",
+    "repeat": 3,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      54,
+      106,
+      8,
+      23,
+      3,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      49,
+      106,
+      8,
+      6,
+      62,
+      53,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "joint_quantization",
+    "numerator": "fp8-fp8_e4m3-4gpu-eager",
+    "denominator": "bf16-bf16-4gpu-eager",
+    "repeat": 4,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      54,
+      106,
+      8,
+      23,
+      3,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      49,
+      106,
+      8,
+      6,
+      62,
+      53,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "joint_quantization",
+    "numerator": "fp8-fp8_e4m3-4gpu-eager",
+    "denominator": "bf16-bf16-4gpu-eager",
+    "repeat": 5,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      54,
+      106,
+      8,
+      23,
+      3,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      49,
+      106,
+      8,
+      6,
+      62,
+      53,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "kv_quantization",
+    "numerator": "fp8-fp8_e4m3-2gpu-eager",
+    "denominator": "fp8-bf16-2gpu-eager",
+    "repeat": 1,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5",
+      "HumanEval/6"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5",
+      "HumanEval/6"
+    ],
+    "numerator_lengths": [
+      54,
+      98,
+      8,
+      7,
+      62,
+      50,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      47,
+      111,
+      8,
+      24,
+      62,
+      53,
+      106,
+      14
+    ]
+  },
+  {
+    "label": "kv_quantization",
+    "numerator": "fp8-fp8_e4m3-2gpu-eager",
+    "denominator": "fp8-bf16-2gpu-eager",
+    "repeat": 2,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5",
+      "HumanEval/6"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5",
+      "HumanEval/6"
+    ],
+    "numerator_lengths": [
+      54,
+      98,
+      8,
+      7,
+      62,
+      50,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      47,
+      111,
+      8,
+      24,
+      62,
+      53,
+      106,
+      14
+    ]
+  },
+  {
+    "label": "kv_quantization",
+    "numerator": "fp8-fp8_e4m3-2gpu-eager",
+    "denominator": "fp8-bf16-2gpu-eager",
+    "repeat": 3,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5",
+      "HumanEval/6"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5",
+      "HumanEval/6"
+    ],
+    "numerator_lengths": [
+      54,
+      98,
+      8,
+      7,
+      62,
+      50,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      47,
+      111,
+      8,
+      24,
+      62,
+      53,
+      106,
+      14
+    ]
+  },
+  {
+    "label": "kv_quantization",
+    "numerator": "fp8-fp8_e4m3-2gpu-eager",
+    "denominator": "fp8-bf16-2gpu-eager",
+    "repeat": 4,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5",
+      "HumanEval/6"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5",
+      "HumanEval/6"
+    ],
+    "numerator_lengths": [
+      54,
+      98,
+      8,
+      7,
+      62,
+      50,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      47,
+      111,
+      8,
+      24,
+      62,
+      53,
+      106,
+      14
+    ]
+  },
+  {
+    "label": "kv_quantization",
+    "numerator": "fp8-fp8_e4m3-2gpu-eager",
+    "denominator": "fp8-bf16-2gpu-eager",
+    "repeat": 5,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5",
+      "HumanEval/6"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5",
+      "HumanEval/6"
+    ],
+    "numerator_lengths": [
+      54,
+      98,
+      8,
+      7,
+      62,
+      50,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      47,
+      111,
+      8,
+      24,
+      62,
+      53,
+      106,
+      14
+    ]
+  },
+  {
+    "label": "kv_quantization",
+    "numerator": "fp8-fp8_e4m3-4gpu-eager",
+    "denominator": "fp8-bf16-4gpu-eager",
+    "repeat": 1,
+    "changed_answer_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4"
+    ],
+    "numerator_lengths": [
+      54,
+      106,
+      8,
+      23,
+      3,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      110,
+      8,
+      24,
+      62,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "kv_quantization",
+    "numerator": "fp8-fp8_e4m3-4gpu-eager",
+    "denominator": "fp8-bf16-4gpu-eager",
+    "repeat": 2,
+    "changed_answer_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4"
+    ],
+    "numerator_lengths": [
+      54,
+      106,
+      8,
+      23,
+      3,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      110,
+      8,
+      24,
+      62,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "kv_quantization",
+    "numerator": "fp8-fp8_e4m3-4gpu-eager",
+    "denominator": "fp8-bf16-4gpu-eager",
+    "repeat": 3,
+    "changed_answer_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4"
+    ],
+    "numerator_lengths": [
+      54,
+      106,
+      8,
+      23,
+      3,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      110,
+      8,
+      24,
+      62,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "kv_quantization",
+    "numerator": "fp8-fp8_e4m3-4gpu-eager",
+    "denominator": "fp8-bf16-4gpu-eager",
+    "repeat": 4,
+    "changed_answer_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4"
+    ],
+    "numerator_lengths": [
+      54,
+      106,
+      8,
+      23,
+      3,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      110,
+      8,
+      24,
+      62,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "kv_quantization",
+    "numerator": "fp8-fp8_e4m3-4gpu-eager",
+    "denominator": "fp8-bf16-4gpu-eager",
+    "repeat": 5,
+    "changed_answer_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4"
+    ],
+    "numerator_lengths": [
+      54,
+      106,
+      8,
+      23,
+      3,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      110,
+      8,
+      24,
+      62,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "scaling_2_to_4",
+    "numerator": "fp8-bf16-4gpu-eager",
+    "denominator": "fp8-bf16-2gpu-eager",
+    "repeat": 1,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5",
+      "HumanEval/6"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/5",
+      "HumanEval/6"
+    ],
+    "numerator_lengths": [
+      54,
+      110,
+      8,
+      24,
+      62,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      47,
+      111,
+      8,
+      24,
+      62,
+      53,
+      106,
+      14
+    ]
+  },
+  {
+    "label": "scaling_2_to_4",
+    "numerator": "fp8-bf16-4gpu-eager",
+    "denominator": "fp8-bf16-2gpu-eager",
+    "repeat": 2,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5",
+      "HumanEval/6"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/5",
+      "HumanEval/6"
+    ],
+    "numerator_lengths": [
+      54,
+      110,
+      8,
+      24,
+      62,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      47,
+      111,
+      8,
+      24,
+      62,
+      53,
+      106,
+      14
+    ]
+  },
+  {
+    "label": "scaling_2_to_4",
+    "numerator": "fp8-bf16-4gpu-eager",
+    "denominator": "fp8-bf16-2gpu-eager",
+    "repeat": 3,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5",
+      "HumanEval/6"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/5",
+      "HumanEval/6"
+    ],
+    "numerator_lengths": [
+      54,
+      110,
+      8,
+      24,
+      62,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      47,
+      111,
+      8,
+      24,
+      62,
+      53,
+      106,
+      14
+    ]
+  },
+  {
+    "label": "scaling_2_to_4",
+    "numerator": "fp8-bf16-4gpu-eager",
+    "denominator": "fp8-bf16-2gpu-eager",
+    "repeat": 4,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5",
+      "HumanEval/6"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/5",
+      "HumanEval/6"
+    ],
+    "numerator_lengths": [
+      54,
+      110,
+      8,
+      24,
+      62,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      47,
+      111,
+      8,
+      24,
+      62,
+      53,
+      106,
+      14
+    ]
+  },
+  {
+    "label": "scaling_2_to_4",
+    "numerator": "fp8-bf16-4gpu-eager",
+    "denominator": "fp8-bf16-2gpu-eager",
+    "repeat": 5,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5",
+      "HumanEval/6"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/5",
+      "HumanEval/6"
+    ],
+    "numerator_lengths": [
+      54,
+      110,
+      8,
+      24,
+      62,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      47,
+      111,
+      8,
+      24,
+      62,
+      53,
+      106,
+      14
+    ]
+  },
+  {
+    "label": "scaling_2_to_4",
+    "numerator": "fp8-fp8_e4m3-4gpu-eager",
+    "denominator": "fp8-fp8_e4m3-2gpu-eager",
+    "repeat": 1,
+    "changed_answer_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      54,
+      106,
+      8,
+      23,
+      3,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      98,
+      8,
+      7,
+      62,
+      50,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "scaling_2_to_4",
+    "numerator": "fp8-fp8_e4m3-4gpu-eager",
+    "denominator": "fp8-fp8_e4m3-2gpu-eager",
+    "repeat": 2,
+    "changed_answer_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      54,
+      106,
+      8,
+      23,
+      3,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      98,
+      8,
+      7,
+      62,
+      50,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "scaling_2_to_4",
+    "numerator": "fp8-fp8_e4m3-4gpu-eager",
+    "denominator": "fp8-fp8_e4m3-2gpu-eager",
+    "repeat": 3,
+    "changed_answer_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      54,
+      106,
+      8,
+      23,
+      3,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      98,
+      8,
+      7,
+      62,
+      50,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "scaling_2_to_4",
+    "numerator": "fp8-fp8_e4m3-4gpu-eager",
+    "denominator": "fp8-fp8_e4m3-2gpu-eager",
+    "repeat": 4,
+    "changed_answer_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      54,
+      106,
+      8,
+      23,
+      3,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      98,
+      8,
+      7,
+      62,
+      50,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "scaling_2_to_4",
+    "numerator": "fp8-fp8_e4m3-4gpu-eager",
+    "denominator": "fp8-fp8_e4m3-2gpu-eager",
+    "repeat": 5,
+    "changed_answer_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      54,
+      106,
+      8,
+      23,
+      3,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      98,
+      8,
+      7,
+      62,
+      50,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "model_quantization",
+    "numerator": "fp8-bf16-4gpu-graph",
+    "denominator": "bf16-bf16-4gpu-graph",
+    "repeat": 1,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/3"
+    ],
+    "numerator_lengths": [
+      49,
+      110,
+      8,
+      6,
+      62,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      48,
+      110,
+      8,
+      4,
+      62,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "model_quantization",
+    "numerator": "fp8-bf16-4gpu-graph",
+    "denominator": "bf16-bf16-4gpu-graph",
+    "repeat": 2,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/3"
+    ],
+    "numerator_lengths": [
+      49,
+      110,
+      8,
+      6,
+      62,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      48,
+      110,
+      8,
+      4,
+      62,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "model_quantization",
+    "numerator": "fp8-bf16-4gpu-graph",
+    "denominator": "bf16-bf16-4gpu-graph",
+    "repeat": 3,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      49,
+      106,
+      8,
+      24,
+      62,
+      53,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      48,
+      110,
+      8,
+      4,
+      62,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "model_quantization",
+    "numerator": "fp8-bf16-4gpu-graph",
+    "denominator": "bf16-bf16-4gpu-graph",
+    "repeat": 4,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/3"
+    ],
+    "numerator_lengths": [
+      49,
+      110,
+      8,
+      6,
+      62,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      48,
+      110,
+      8,
+      4,
+      62,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "model_quantization",
+    "numerator": "fp8-bf16-4gpu-graph",
+    "denominator": "bf16-bf16-4gpu-graph",
+    "repeat": 5,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/3"
+    ],
+    "numerator_lengths": [
+      49,
+      110,
+      8,
+      6,
+      62,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      48,
+      110,
+      8,
+      4,
+      62,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "joint_quantization",
+    "numerator": "fp8-fp8_e4m3-4gpu-graph",
+    "denominator": "bf16-bf16-4gpu-graph",
+    "repeat": 1,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4"
+    ],
+    "numerator_lengths": [
+      54,
+      106,
+      8,
+      17,
+      60,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      48,
+      110,
+      8,
+      4,
+      62,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "joint_quantization",
+    "numerator": "fp8-fp8_e4m3-4gpu-graph",
+    "denominator": "bf16-bf16-4gpu-graph",
+    "repeat": 2,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4"
+    ],
+    "numerator_lengths": [
+      54,
+      106,
+      8,
+      17,
+      60,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      48,
+      110,
+      8,
+      4,
+      62,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "joint_quantization",
+    "numerator": "fp8-fp8_e4m3-4gpu-graph",
+    "denominator": "bf16-bf16-4gpu-graph",
+    "repeat": 3,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4"
+    ],
+    "numerator_lengths": [
+      54,
+      106,
+      8,
+      17,
+      60,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      48,
+      110,
+      8,
+      4,
+      62,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "joint_quantization",
+    "numerator": "fp8-fp8_e4m3-4gpu-graph",
+    "denominator": "bf16-bf16-4gpu-graph",
+    "repeat": 4,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4"
+    ],
+    "numerator_lengths": [
+      54,
+      106,
+      8,
+      17,
+      60,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      48,
+      110,
+      8,
+      4,
+      62,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "joint_quantization",
+    "numerator": "fp8-fp8_e4m3-4gpu-graph",
+    "denominator": "bf16-bf16-4gpu-graph",
+    "repeat": 5,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4"
+    ],
+    "numerator_lengths": [
+      54,
+      106,
+      8,
+      17,
+      60,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      48,
+      110,
+      8,
+      4,
+      62,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "kv_quantization",
+    "numerator": "fp8-fp8_e4m3-2gpu-graph",
+    "denominator": "fp8-bf16-2gpu-graph",
+    "repeat": 1,
+    "changed_answer_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      54,
+      111,
+      8,
+      30,
+      62,
+      14,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      101,
+      8,
+      23,
+      62,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "kv_quantization",
+    "numerator": "fp8-fp8_e4m3-2gpu-graph",
+    "denominator": "fp8-bf16-2gpu-graph",
+    "repeat": 2,
+    "changed_answer_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      54,
+      111,
+      8,
+      30,
+      62,
+      14,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      101,
+      8,
+      23,
+      62,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "kv_quantization",
+    "numerator": "fp8-fp8_e4m3-2gpu-graph",
+    "denominator": "fp8-bf16-2gpu-graph",
+    "repeat": 3,
+    "changed_answer_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      54,
+      111,
+      8,
+      30,
+      62,
+      14,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      101,
+      8,
+      23,
+      62,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "kv_quantization",
+    "numerator": "fp8-fp8_e4m3-2gpu-graph",
+    "denominator": "fp8-bf16-2gpu-graph",
+    "repeat": 4,
+    "changed_answer_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      54,
+      111,
+      8,
+      30,
+      62,
+      14,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      101,
+      8,
+      23,
+      62,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "kv_quantization",
+    "numerator": "fp8-fp8_e4m3-2gpu-graph",
+    "denominator": "fp8-bf16-2gpu-graph",
+    "repeat": 5,
+    "changed_answer_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      54,
+      111,
+      8,
+      30,
+      62,
+      14,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      101,
+      8,
+      23,
+      62,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "kv_quantization",
+    "numerator": "fp8-fp8_e4m3-4gpu-graph",
+    "denominator": "fp8-bf16-4gpu-graph",
+    "repeat": 1,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4"
+    ],
+    "numerator_lengths": [
+      54,
+      106,
+      8,
+      17,
+      60,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      49,
+      110,
+      8,
+      6,
+      62,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "kv_quantization",
+    "numerator": "fp8-fp8_e4m3-4gpu-graph",
+    "denominator": "fp8-bf16-4gpu-graph",
+    "repeat": 2,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4"
+    ],
+    "numerator_lengths": [
+      54,
+      106,
+      8,
+      17,
+      60,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      49,
+      110,
+      8,
+      6,
+      62,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "kv_quantization",
+    "numerator": "fp8-fp8_e4m3-4gpu-graph",
+    "denominator": "fp8-bf16-4gpu-graph",
+    "repeat": 3,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      54,
+      106,
+      8,
+      17,
+      60,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      49,
+      106,
+      8,
+      24,
+      62,
+      53,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "kv_quantization",
+    "numerator": "fp8-fp8_e4m3-4gpu-graph",
+    "denominator": "fp8-bf16-4gpu-graph",
+    "repeat": 4,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4"
+    ],
+    "numerator_lengths": [
+      54,
+      106,
+      8,
+      17,
+      60,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      49,
+      110,
+      8,
+      6,
+      62,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "kv_quantization",
+    "numerator": "fp8-fp8_e4m3-4gpu-graph",
+    "denominator": "fp8-bf16-4gpu-graph",
+    "repeat": 5,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4"
+    ],
+    "numerator_lengths": [
+      54,
+      106,
+      8,
+      17,
+      60,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      49,
+      110,
+      8,
+      6,
+      62,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "scaling_2_to_4",
+    "numerator": "fp8-bf16-4gpu-graph",
+    "denominator": "fp8-bf16-2gpu-graph",
+    "repeat": 1,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3"
+    ],
+    "numerator_lengths": [
+      49,
+      110,
+      8,
+      6,
+      62,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      101,
+      8,
+      23,
+      62,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "scaling_2_to_4",
+    "numerator": "fp8-bf16-4gpu-graph",
+    "denominator": "fp8-bf16-2gpu-graph",
+    "repeat": 2,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3"
+    ],
+    "numerator_lengths": [
+      49,
+      110,
+      8,
+      6,
+      62,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      101,
+      8,
+      23,
+      62,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "scaling_2_to_4",
+    "numerator": "fp8-bf16-4gpu-graph",
+    "denominator": "fp8-bf16-2gpu-graph",
+    "repeat": 3,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      49,
+      106,
+      8,
+      24,
+      62,
+      53,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      101,
+      8,
+      23,
+      62,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "scaling_2_to_4",
+    "numerator": "fp8-bf16-4gpu-graph",
+    "denominator": "fp8-bf16-2gpu-graph",
+    "repeat": 4,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3"
+    ],
+    "numerator_lengths": [
+      49,
+      110,
+      8,
+      6,
+      62,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      101,
+      8,
+      23,
+      62,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "scaling_2_to_4",
+    "numerator": "fp8-bf16-4gpu-graph",
+    "denominator": "fp8-bf16-2gpu-graph",
+    "repeat": 5,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3"
+    ],
+    "numerator_lengths": [
+      49,
+      110,
+      8,
+      6,
+      62,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      101,
+      8,
+      23,
+      62,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "scaling_2_to_4",
+    "numerator": "fp8-fp8_e4m3-4gpu-graph",
+    "denominator": "fp8-fp8_e4m3-2gpu-graph",
+    "repeat": 1,
+    "changed_answer_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      54,
+      106,
+      8,
+      17,
+      60,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      111,
+      8,
+      30,
+      62,
+      14,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "scaling_2_to_4",
+    "numerator": "fp8-fp8_e4m3-4gpu-graph",
+    "denominator": "fp8-fp8_e4m3-2gpu-graph",
+    "repeat": 2,
+    "changed_answer_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      54,
+      106,
+      8,
+      17,
+      60,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      111,
+      8,
+      30,
+      62,
+      14,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "scaling_2_to_4",
+    "numerator": "fp8-fp8_e4m3-4gpu-graph",
+    "denominator": "fp8-fp8_e4m3-2gpu-graph",
+    "repeat": 3,
+    "changed_answer_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      54,
+      106,
+      8,
+      17,
+      60,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      111,
+      8,
+      30,
+      62,
+      14,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "scaling_2_to_4",
+    "numerator": "fp8-fp8_e4m3-4gpu-graph",
+    "denominator": "fp8-fp8_e4m3-2gpu-graph",
+    "repeat": 4,
+    "changed_answer_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      54,
+      106,
+      8,
+      17,
+      60,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      111,
+      8,
+      30,
+      62,
+      14,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "scaling_2_to_4",
+    "numerator": "fp8-fp8_e4m3-4gpu-graph",
+    "denominator": "fp8-fp8_e4m3-2gpu-graph",
+    "repeat": 5,
+    "changed_answer_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      54,
+      106,
+      8,
+      17,
+      60,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      111,
+      8,
+      30,
+      62,
+      14,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "cuda_graph",
+    "numerator": "bf16-bf16-4gpu-graph",
+    "denominator": "bf16-bf16-4gpu-eager",
+    "repeat": 1,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      48,
+      110,
+      8,
+      4,
+      62,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      49,
+      106,
+      8,
+      6,
+      62,
+      53,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "cuda_graph",
+    "numerator": "bf16-bf16-4gpu-graph",
+    "denominator": "bf16-bf16-4gpu-eager",
+    "repeat": 2,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      48,
+      110,
+      8,
+      4,
+      62,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      49,
+      106,
+      8,
+      6,
+      62,
+      53,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "cuda_graph",
+    "numerator": "bf16-bf16-4gpu-graph",
+    "denominator": "bf16-bf16-4gpu-eager",
+    "repeat": 3,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      48,
+      110,
+      8,
+      4,
+      62,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      49,
+      106,
+      8,
+      6,
+      62,
+      53,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "cuda_graph",
+    "numerator": "bf16-bf16-4gpu-graph",
+    "denominator": "bf16-bf16-4gpu-eager",
+    "repeat": 4,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      48,
+      110,
+      8,
+      4,
+      62,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      49,
+      106,
+      8,
+      6,
+      62,
+      53,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "cuda_graph",
+    "numerator": "bf16-bf16-4gpu-graph",
+    "denominator": "bf16-bf16-4gpu-eager",
+    "repeat": 5,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      48,
+      110,
+      8,
+      4,
+      62,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      49,
+      106,
+      8,
+      6,
+      62,
+      53,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "cuda_graph",
+    "numerator": "fp8-bf16-2gpu-graph",
+    "denominator": "fp8-bf16-2gpu-eager",
+    "repeat": 1,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5",
+      "HumanEval/6"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5",
+      "HumanEval/6"
+    ],
+    "numerator_lengths": [
+      54,
+      101,
+      8,
+      23,
+      62,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      47,
+      111,
+      8,
+      24,
+      62,
+      53,
+      106,
+      14
+    ]
+  },
+  {
+    "label": "cuda_graph",
+    "numerator": "fp8-bf16-2gpu-graph",
+    "denominator": "fp8-bf16-2gpu-eager",
+    "repeat": 2,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5",
+      "HumanEval/6"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5",
+      "HumanEval/6"
+    ],
+    "numerator_lengths": [
+      54,
+      101,
+      8,
+      23,
+      62,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      47,
+      111,
+      8,
+      24,
+      62,
+      53,
+      106,
+      14
+    ]
+  },
+  {
+    "label": "cuda_graph",
+    "numerator": "fp8-bf16-2gpu-graph",
+    "denominator": "fp8-bf16-2gpu-eager",
+    "repeat": 3,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5",
+      "HumanEval/6"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5",
+      "HumanEval/6"
+    ],
+    "numerator_lengths": [
+      54,
+      101,
+      8,
+      23,
+      62,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      47,
+      111,
+      8,
+      24,
+      62,
+      53,
+      106,
+      14
+    ]
+  },
+  {
+    "label": "cuda_graph",
+    "numerator": "fp8-bf16-2gpu-graph",
+    "denominator": "fp8-bf16-2gpu-eager",
+    "repeat": 4,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5",
+      "HumanEval/6"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5",
+      "HumanEval/6"
+    ],
+    "numerator_lengths": [
+      54,
+      101,
+      8,
+      23,
+      62,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      47,
+      111,
+      8,
+      24,
+      62,
+      53,
+      106,
+      14
+    ]
+  },
+  {
+    "label": "cuda_graph",
+    "numerator": "fp8-bf16-2gpu-graph",
+    "denominator": "fp8-bf16-2gpu-eager",
+    "repeat": 5,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5",
+      "HumanEval/6"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5",
+      "HumanEval/6"
+    ],
+    "numerator_lengths": [
+      54,
+      101,
+      8,
+      23,
+      62,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      47,
+      111,
+      8,
+      24,
+      62,
+      53,
+      106,
+      14
+    ]
+  },
+  {
+    "label": "cuda_graph",
+    "numerator": "fp8-bf16-4gpu-graph",
+    "denominator": "fp8-bf16-4gpu-eager",
+    "repeat": 1,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/3"
+    ],
+    "numerator_lengths": [
+      49,
+      110,
+      8,
+      6,
+      62,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      110,
+      8,
+      24,
+      62,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "cuda_graph",
+    "numerator": "fp8-bf16-4gpu-graph",
+    "denominator": "fp8-bf16-4gpu-eager",
+    "repeat": 2,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/3"
+    ],
+    "numerator_lengths": [
+      49,
+      110,
+      8,
+      6,
+      62,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      110,
+      8,
+      24,
+      62,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "cuda_graph",
+    "numerator": "fp8-bf16-4gpu-graph",
+    "denominator": "fp8-bf16-4gpu-eager",
+    "repeat": 3,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      49,
+      106,
+      8,
+      24,
+      62,
+      53,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      110,
+      8,
+      24,
+      62,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "cuda_graph",
+    "numerator": "fp8-bf16-4gpu-graph",
+    "denominator": "fp8-bf16-4gpu-eager",
+    "repeat": 4,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/3"
+    ],
+    "numerator_lengths": [
+      49,
+      110,
+      8,
+      6,
+      62,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      110,
+      8,
+      24,
+      62,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "cuda_graph",
+    "numerator": "fp8-bf16-4gpu-graph",
+    "denominator": "fp8-bf16-4gpu-eager",
+    "repeat": 5,
+    "changed_answer_ids": [
+      "HumanEval/0",
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/0",
+      "HumanEval/3"
+    ],
+    "numerator_lengths": [
+      49,
+      110,
+      8,
+      6,
+      62,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      110,
+      8,
+      24,
+      62,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "cuda_graph",
+    "numerator": "fp8-fp8_e4m3-2gpu-graph",
+    "denominator": "fp8-fp8_e4m3-2gpu-eager",
+    "repeat": 1,
+    "changed_answer_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      54,
+      111,
+      8,
+      30,
+      62,
+      14,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      98,
+      8,
+      7,
+      62,
+      50,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "cuda_graph",
+    "numerator": "fp8-fp8_e4m3-2gpu-graph",
+    "denominator": "fp8-fp8_e4m3-2gpu-eager",
+    "repeat": 2,
+    "changed_answer_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      54,
+      111,
+      8,
+      30,
+      62,
+      14,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      98,
+      8,
+      7,
+      62,
+      50,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "cuda_graph",
+    "numerator": "fp8-fp8_e4m3-2gpu-graph",
+    "denominator": "fp8-fp8_e4m3-2gpu-eager",
+    "repeat": 3,
+    "changed_answer_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      54,
+      111,
+      8,
+      30,
+      62,
+      14,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      98,
+      8,
+      7,
+      62,
+      50,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "cuda_graph",
+    "numerator": "fp8-fp8_e4m3-2gpu-graph",
+    "denominator": "fp8-fp8_e4m3-2gpu-eager",
+    "repeat": 4,
+    "changed_answer_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      54,
+      111,
+      8,
+      30,
+      62,
+      14,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      98,
+      8,
+      7,
+      62,
+      50,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "cuda_graph",
+    "numerator": "fp8-fp8_e4m3-2gpu-graph",
+    "denominator": "fp8-fp8_e4m3-2gpu-eager",
+    "repeat": 5,
+    "changed_answer_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/1",
+      "HumanEval/3",
+      "HumanEval/5"
+    ],
+    "numerator_lengths": [
+      54,
+      111,
+      8,
+      30,
+      62,
+      14,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      98,
+      8,
+      7,
+      62,
+      50,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "cuda_graph",
+    "numerator": "fp8-fp8_e4m3-4gpu-graph",
+    "denominator": "fp8-fp8_e4m3-4gpu-eager",
+    "repeat": 1,
+    "changed_answer_ids": [
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/3",
+      "HumanEval/4"
+    ],
+    "numerator_lengths": [
+      54,
+      106,
+      8,
+      17,
+      60,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      106,
+      8,
+      23,
+      3,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "cuda_graph",
+    "numerator": "fp8-fp8_e4m3-4gpu-graph",
+    "denominator": "fp8-fp8_e4m3-4gpu-eager",
+    "repeat": 2,
+    "changed_answer_ids": [
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/3",
+      "HumanEval/4"
+    ],
+    "numerator_lengths": [
+      54,
+      106,
+      8,
+      17,
+      60,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      106,
+      8,
+      23,
+      3,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "cuda_graph",
+    "numerator": "fp8-fp8_e4m3-4gpu-graph",
+    "denominator": "fp8-fp8_e4m3-4gpu-eager",
+    "repeat": 3,
+    "changed_answer_ids": [
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/3",
+      "HumanEval/4"
+    ],
+    "numerator_lengths": [
+      54,
+      106,
+      8,
+      17,
+      60,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      106,
+      8,
+      23,
+      3,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "cuda_graph",
+    "numerator": "fp8-fp8_e4m3-4gpu-graph",
+    "denominator": "fp8-fp8_e4m3-4gpu-eager",
+    "repeat": 4,
+    "changed_answer_ids": [
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/3",
+      "HumanEval/4"
+    ],
+    "numerator_lengths": [
+      54,
+      106,
+      8,
+      17,
+      60,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      106,
+      8,
+      23,
+      3,
+      51,
+      102,
+      14
+    ]
+  },
+  {
+    "label": "cuda_graph",
+    "numerator": "fp8-fp8_e4m3-4gpu-graph",
+    "denominator": "fp8-fp8_e4m3-4gpu-eager",
+    "repeat": 5,
+    "changed_answer_ids": [
+      "HumanEval/3",
+      "HumanEval/4",
+      "HumanEval/5"
+    ],
+    "changed_length_ids": [
+      "HumanEval/3",
+      "HumanEval/4"
+    ],
+    "numerator_lengths": [
+      54,
+      106,
+      8,
+      17,
+      60,
+      51,
+      102,
+      14
+    ],
+    "denominator_lengths": [
+      54,
+      106,
+      8,
+      23,
+      3,
+      51,
+      102,
+      14
+    ]
+  }
+]

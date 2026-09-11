@@ -89,16 +89,8 @@ class ModelRunner:
             and self.runner_config.kv_cache_layout == "paged"
             and self.runner_config.flashinfer_cache_mode == "paged"
             and self.runner_config.flashinfer_prefill_mode == "paged"
-            and (
-                (
-                    get_attention_tp_size() == 1
-                    and get_moe_expert_parallel_world_size() == 1
-                )
-                or (
-                    get_attention_tp_size() == 4
-                    and get_moe_expert_parallel_world_size() == 4
-                )
-            )
+            and get_attention_tp_size() in (1, 2, 4)
+            and get_moe_expert_parallel_world_size() == get_attention_tp_size()
         )
         if (
             self.runner_config.attention_backend == "flashinfer"

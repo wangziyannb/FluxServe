@@ -1,0 +1,1269 @@
+{
+  "updated": "2026-09-10T20:34:36.100026+00:00",
+  "groups": {
+    "bf16-bf16-4gpu-eager": {
+      "weights": "bf16",
+      "kv": "bf16",
+      "gpus": 4,
+      "graph": false,
+      "name": "bf16-bf16-4gpu-eager",
+      "valid_runs": 5,
+      "status": "complete",
+      "trial_status": "passed",
+      "median_tps": 181.8286304378151,
+      "mad_tps": 1.8363469501576617,
+      "per_gpu_tps": 45.45715760945377,
+      "tokens": [
+        400,
+        400,
+        400,
+        400,
+        400
+      ],
+      "nfe": [
+        51,
+        51,
+        51,
+        51,
+        51
+      ],
+      "seconds": [
+        2.1841166948433965,
+        2.158976702950895,
+        2.3288435658905655,
+        2.2223174918908626,
+        2.1998735789675266
+      ],
+      "tokens_per_forward": [
+        7.8431372549019605,
+        7.8431372549019605,
+        7.8431372549019605,
+        7.8431372549019605,
+        7.8431372549019605
+      ],
+      "forwards_per_second": [
+        23.35040069992998,
+        23.622302144480333,
+        21.899281148365695,
+        22.949016144676325,
+        23.183150380821424
+      ],
+      "unique_output_count": 1,
+      "output_matches_trial": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "peak_device_used_bytes": {
+        "0": 61194895360,
+        "1": 61194895360,
+        "2": 61194895360,
+        "3": 61194895360
+      },
+      "peak_allocated_bytes": 58804723200
+    },
+    "bf16-bf16-4gpu-graph": {
+      "weights": "bf16",
+      "kv": "bf16",
+      "gpus": 4,
+      "graph": true,
+      "name": "bf16-bf16-4gpu-graph",
+      "valid_runs": 5,
+      "status": "complete",
+      "trial_status": "passed",
+      "median_tps": 297.07456492933954,
+      "mad_tps": 0.5957317147370418,
+      "per_gpu_tps": 74.26864123233489,
+      "tokens": [
+        399,
+        399,
+        399,
+        399,
+        399
+      ],
+      "nfe": [
+        54,
+        54,
+        54,
+        54,
+        54
+      ],
+      "seconds": [
+        1.3397350059822202,
+        1.3430971449706703,
+        1.3394703511148691,
+        1.3443463409785181,
+        1.345795906148851
+      ],
+      "tokens_per_forward": [
+        7.388888888888889,
+        7.388888888888889,
+        7.388888888888889,
+        7.388888888888889,
+        7.388888888888889
+      ],
+      "forwards_per_second": [
+        40.30647834002827,
+        40.20558021600084,
+        40.314442163691545,
+        40.1682203119582,
+        40.12495487114921
+      ],
+      "unique_output_count": 1,
+      "output_matches_trial": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "peak_device_used_bytes": {
+        "0": 60616081408,
+        "1": 60616081408,
+        "2": 60616081408,
+        "3": 60616081408
+      },
+      "peak_allocated_bytes": 58804723200
+    },
+    "fp8-bf16-2gpu-eager": {
+      "weights": "fp8",
+      "kv": "bf16",
+      "gpus": 2,
+      "graph": false,
+      "name": "fp8-bf16-2gpu-eager",
+      "valid_runs": 5,
+      "status": "complete",
+      "trial_status": "passed",
+      "median_tps": 168.33471655148816,
+      "mad_tps": 1.2733496708549694,
+      "per_gpu_tps": 84.16735827574408,
+      "tokens": [
+        425,
+        425,
+        425,
+        425,
+        425
+      ],
+      "nfe": [
+        48,
+        48,
+        48,
+        48,
+        48
+      ],
+      "seconds": [
+        2.5057770509738475,
+        2.5683507611975074,
+        2.536585550988093,
+        2.4983423529192805,
+        2.5247317291796207
+      ],
+      "tokens_per_forward": [
+        8.854166666666666,
+        8.854166666666666,
+        8.854166666666666,
+        8.854166666666666,
+        8.854166666666666
+      ],
+      "forwards_per_second": [
+        19.155734538052872,
+        18.689036063602053,
+        18.923075541963186,
+        19.212739176403357,
+        19.011920928168074
+      ],
+      "unique_output_count": 1,
+      "output_matches_trial": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "peak_device_used_bytes": {
+        "0": 59403927552,
+        "1": 59403927552
+      },
+      "peak_allocated_bytes": 57158932992
+    },
+    "fp8-bf16-2gpu-graph": {
+      "weights": "fp8",
+      "kv": "bf16",
+      "gpus": 2,
+      "graph": true,
+      "name": "fp8-bf16-2gpu-graph",
+      "valid_runs": 5,
+      "status": "complete",
+      "trial_status": "passed",
+      "median_tps": 366.6046755257316,
+      "mad_tps": 0.31289791623930796,
+      "per_gpu_tps": 183.3023377628658,
+      "tokens": [
+        415,
+        415,
+        415,
+        415,
+        415
+      ],
+      "nfe": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ],
+      "seconds": [
+        1.132009566994384,
+        1.1437068660743535,
+        1.1279032172169536,
+        1.131581607973203,
+        1.1329765650443733
+      ],
+      "tokens_per_forward": [
+        7.980769230769231,
+        7.980769230769231,
+        7.980769230769231,
+        7.980769230769231,
+        7.980769230769231
+      ],
+      "forwards_per_second": [
+        45.936007535754314,
+        45.46619552830369,
+        46.10324645434337,
+        45.95338032502858,
+        45.89680104986409
+      ],
+      "unique_output_count": 1,
+      "output_matches_trial": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "peak_device_used_bytes": {
+        "0": 58858668032,
+        "1": 58858668032
+      },
+      "peak_allocated_bytes": 57158932992
+    },
+    "fp8-bf16-4gpu-eager": {
+      "weights": "fp8",
+      "kv": "bf16",
+      "gpus": 4,
+      "graph": false,
+      "name": "fp8-bf16-4gpu-eager",
+      "valid_runs": 5,
+      "status": "complete",
+      "trial_status": "passed",
+      "median_tps": 184.71387850629299,
+      "mad_tps": 2.0054014683055073,
+      "per_gpu_tps": 46.178469626573246,
+      "tokens": [
+        425,
+        425,
+        425,
+        425,
+        425
+      ],
+      "nfe": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ],
+      "seconds": [
+        2.288309614174068,
+        2.300855807028711,
+        2.2687312581110746,
+        2.3261099150404334,
+        2.334288958925754
+      ],
+      "tokens_per_forward": [
+        9.659090909090908,
+        9.659090909090908,
+        9.659090909090908,
+        9.659090909090908,
+        9.659090909090908
+      ],
+      "forwards_per_second": [
+        19.22816725824978,
+        19.123319186533863,
+        19.39409960641791,
+        18.915701152168115,
+        18.8494230038465
+      ],
+      "unique_output_count": 1,
+      "output_matches_trial": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "peak_device_used_bytes": {
+        "0": 33684455424,
+        "1": 33684455424,
+        "2": 33684455424,
+        "3": 33684455424
+      },
+      "peak_allocated_bytes": 31365913600
+    },
+    "fp8-bf16-4gpu-graph": {
+      "weights": "fp8",
+      "kv": "bf16",
+      "gpus": 4,
+      "graph": true,
+      "name": "fp8-bf16-4gpu-graph",
+      "valid_runs": 5,
+      "status": "complete",
+      "trial_status": "passed",
+      "median_tps": 455.6920951506275,
+      "mad_tps": 1.4033691557266934,
+      "per_gpu_tps": 113.92302378765687,
+      "tokens": [
+        402,
+        402,
+        418,
+        402,
+        402
+      ],
+      "nfe": [
+        52,
+        52,
+        49,
+        52,
+        52
+      ],
+      "seconds": [
+        0.8811587980017066,
+        0.8850022950209677,
+        0.8459182418882847,
+        0.8821746180765331,
+        0.8848997938912362
+      ],
+      "tokens_per_forward": [
+        7.730769230769231,
+        7.730769230769231,
+        8.53061224489796,
+        7.730769230769231,
+        7.730769230769231
+      ],
+      "forwards_per_second": [
+        59.01319957075352,
+        58.75690977588708,
+        57.92521968863172,
+        58.94524613888714,
+        58.763715800335426
+      ],
+      "unique_output_count": 2,
+      "output_matches_trial": [
+        true,
+        true,
+        false,
+        true,
+        true
+      ],
+      "peak_device_used_bytes": {
+        "0": 33103544320,
+        "1": 33103544320,
+        "2": 33103544320,
+        "3": 33103544320
+      },
+      "peak_allocated_bytes": 31365913600
+    },
+    "fp8-fp8_e4m3-2gpu-eager": {
+      "weights": "fp8",
+      "kv": "fp8_e4m3",
+      "gpus": 2,
+      "graph": false,
+      "name": "fp8-fp8_e4m3-2gpu-eager",
+      "valid_runs": 5,
+      "status": "complete",
+      "trial_status": "passed",
+      "median_tps": 126.13185860107464,
+      "mad_tps": 0.3099549295928341,
+      "per_gpu_tps": 63.06592930053732,
+      "tokens": [
+        395,
+        395,
+        395,
+        395,
+        395
+      ],
+      "nfe": [
+        48,
+        48,
+        48,
+        48,
+        48
+      ],
+      "seconds": [
+        3.1316433800384402,
+        3.102345610037446,
+        3.1270969919860363,
+        3.253542444901541,
+        3.1393580010626465
+      ],
+      "tokens_per_forward": [
+        8.229166666666666,
+        8.229166666666666,
+        8.229166666666666,
+        8.229166666666666,
+        8.229166666666666
+      ],
+      "forwards_per_second": [
+        15.327415728738185,
+        15.472163979634955,
+        15.34969977682558,
+        14.75315008575294,
+        15.289750319572473
+      ],
+      "unique_output_count": 1,
+      "output_matches_trial": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "peak_device_used_bytes": {
+        "0": 59374567424,
+        "1": 59374567424
+      },
+      "peak_allocated_bytes": 57158932992
+    },
+    "fp8-fp8_e4m3-2gpu-graph": {
+      "weights": "fp8",
+      "kv": "fp8_e4m3",
+      "gpus": 2,
+      "graph": true,
+      "name": "fp8-fp8_e4m3-2gpu-graph",
+      "valid_runs": 5,
+      "status": "complete",
+      "trial_status": "passed",
+      "median_tps": 271.8392497881594,
+      "mad_tps": 0.5057054177017903,
+      "per_gpu_tps": 135.9196248940797,
+      "tokens": [
+        395,
+        395,
+        395,
+        395,
+        395
+      ],
+      "nfe": [
+        60,
+        60,
+        60,
+        60,
+        60
+      ],
+      "seconds": [
+        1.4530646339990199,
+        1.4535897399764508,
+        1.4636204030830413,
+        1.4503665019292384,
+        1.4435186109039932
+      ],
+      "tokens_per_forward": [
+        6.583333333333333,
+        6.583333333333333,
+        6.583333333333333,
+        6.583333333333333,
+        6.583333333333333
+      ],
+      "forwards_per_second": [
+        41.292037942505225,
+        41.27712128799976,
+        40.99423585078008,
+        41.36885395532068,
+        41.56510317690011
+      ],
+      "unique_output_count": 1,
+      "output_matches_trial": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "peak_device_used_bytes": {
+        "0": 58858668032,
+        "1": 58858668032
+      },
+      "peak_allocated_bytes": 57158932992
+    },
+    "fp8-fp8_e4m3-4gpu-eager": {
+      "weights": "fp8",
+      "kv": "fp8_e4m3",
+      "gpus": 4,
+      "graph": false,
+      "name": "fp8-fp8_e4m3-4gpu-eager",
+      "valid_runs": 5,
+      "status": "complete",
+      "trial_status": "passed",
+      "median_tps": 101.4174717462253,
+      "mad_tps": 0.7292158950513965,
+      "per_gpu_tps": 25.354367936556326,
+      "tokens": [
+        361,
+        361,
+        361,
+        361,
+        361
+      ],
+      "nfe": [
+        55,
+        55,
+        55,
+        55,
+        55
+      ],
+      "seconds": [
+        3.5595444629434496,
+        3.5417891209945083,
+        3.585323799168691,
+        3.6036382981110364,
+        3.527818182017654
+      ],
+      "tokens_per_forward": [
+        6.5636363636363635,
+        6.5636363636363635,
+        6.5636363636363635,
+        6.5636363636363635,
+        6.5636363636363635
+      ],
+      "forwards_per_second": [
+        15.451415362998313,
+        15.528874848583985,
+        15.340315988405996,
+        15.2623530582495,
+        15.590372621908768
+      ],
+      "unique_output_count": 1,
+      "output_matches_trial": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "peak_device_used_bytes": {
+        "0": 33667678208,
+        "1": 33667678208,
+        "2": 33667678208,
+        "3": 33667678208
+      },
+      "peak_allocated_bytes": 31365913600
+    },
+    "fp8-fp8_e4m3-4gpu-graph": {
+      "weights": "fp8",
+      "kv": "fp8_e4m3",
+      "gpus": 4,
+      "graph": true,
+      "name": "fp8-fp8_e4m3-4gpu-graph",
+      "valid_runs": 5,
+      "status": "complete",
+      "trial_status": "passed",
+      "median_tps": 403.7462280276328,
+      "mad_tps": 0.32935876907419015,
+      "per_gpu_tps": 100.9365570069082,
+      "tokens": [
+        412,
+        412,
+        412,
+        412,
+        412
+      ],
+      "nfe": [
+        47,
+        47,
+        47,
+        47,
+        47
+      ],
+      "seconds": [
+        1.021936824079603,
+        1.0199704009573907,
+        1.0204429698642343,
+        1.019611214986071,
+        1.0224332551006228
+      ],
+      "tokens_per_forward": [
+        8.76595744680851,
+        8.76595744680851,
+        8.76595744680851,
+        8.76595744680851,
+        8.76595744680851
+      ],
+      "forwards_per_second": [
+        45.991101301521326,
+        46.079768546110415,
+        46.05842892548238,
+        46.096001406420456,
+        45.968770837148185
+      ],
+      "unique_output_count": 1,
+      "output_matches_trial": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "peak_device_used_bytes": {
+        "0": 33103544320,
+        "1": 33103544320,
+        "2": 33103544320,
+        "3": 33103544320
+      },
+      "peak_allocated_bytes": 31365913600
+    }
+  },
+  "ratios": [
+    {
+      "label": "model_quantization",
+      "numerator": "fp8-bf16-4gpu-eager",
+      "denominator": "bf16-bf16-4gpu-eager",
+      "status": "complete",
+      "speedup": 1.015867952486529,
+      "numerator_tokens": [
+        425,
+        425,
+        425,
+        425,
+        425
+      ],
+      "denominator_tokens": [
+        400,
+        400,
+        400,
+        400,
+        400
+      ],
+      "numerator_nfe": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ],
+      "denominator_nfe": [
+        51,
+        51,
+        51,
+        51,
+        51
+      ]
+    },
+    {
+      "label": "joint_quantization",
+      "numerator": "fp8-fp8_e4m3-4gpu-eager",
+      "denominator": "bf16-bf16-4gpu-eager",
+      "status": "complete",
+      "speedup": 0.5577640413505166,
+      "numerator_tokens": [
+        361,
+        361,
+        361,
+        361,
+        361
+      ],
+      "denominator_tokens": [
+        400,
+        400,
+        400,
+        400,
+        400
+      ],
+      "numerator_nfe": [
+        55,
+        55,
+        55,
+        55,
+        55
+      ],
+      "denominator_nfe": [
+        51,
+        51,
+        51,
+        51,
+        51
+      ]
+    },
+    {
+      "label": "kv_quantization",
+      "numerator": "fp8-fp8_e4m3-2gpu-eager",
+      "denominator": "fp8-bf16-2gpu-eager",
+      "status": "complete",
+      "speedup": 0.7492920128718367,
+      "numerator_tokens": [
+        395,
+        395,
+        395,
+        395,
+        395
+      ],
+      "denominator_tokens": [
+        425,
+        425,
+        425,
+        425,
+        425
+      ],
+      "numerator_nfe": [
+        48,
+        48,
+        48,
+        48,
+        48
+      ],
+      "denominator_nfe": [
+        48,
+        48,
+        48,
+        48,
+        48
+      ]
+    },
+    {
+      "label": "kv_quantization",
+      "numerator": "fp8-fp8_e4m3-4gpu-eager",
+      "denominator": "fp8-bf16-4gpu-eager",
+      "status": "complete",
+      "speedup": 0.5490517148269946,
+      "numerator_tokens": [
+        361,
+        361,
+        361,
+        361,
+        361
+      ],
+      "denominator_tokens": [
+        425,
+        425,
+        425,
+        425,
+        425
+      ],
+      "numerator_nfe": [
+        55,
+        55,
+        55,
+        55,
+        55
+      ],
+      "denominator_nfe": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ]
+    },
+    {
+      "label": "scaling_2_to_4",
+      "numerator": "fp8-bf16-4gpu-eager",
+      "denominator": "fp8-bf16-2gpu-eager",
+      "status": "complete",
+      "speedup": 1.0973011526698058,
+      "numerator_tokens": [
+        425,
+        425,
+        425,
+        425,
+        425
+      ],
+      "denominator_tokens": [
+        425,
+        425,
+        425,
+        425,
+        425
+      ],
+      "numerator_nfe": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ],
+      "denominator_nfe": [
+        48,
+        48,
+        48,
+        48,
+        48
+      ],
+      "efficiency": 0.5486505763349029
+    },
+    {
+      "label": "scaling_2_to_4",
+      "numerator": "fp8-fp8_e4m3-4gpu-eager",
+      "denominator": "fp8-fp8_e4m3-2gpu-eager",
+      "status": "complete",
+      "speedup": 0.8040591240868405,
+      "numerator_tokens": [
+        361,
+        361,
+        361,
+        361,
+        361
+      ],
+      "denominator_tokens": [
+        395,
+        395,
+        395,
+        395,
+        395
+      ],
+      "numerator_nfe": [
+        55,
+        55,
+        55,
+        55,
+        55
+      ],
+      "denominator_nfe": [
+        48,
+        48,
+        48,
+        48,
+        48
+      ],
+      "efficiency": 0.4020295620434203
+    },
+    {
+      "label": "model_quantization",
+      "numerator": "fp8-bf16-4gpu-graph",
+      "denominator": "bf16-bf16-4gpu-graph",
+      "status": "complete",
+      "speedup": 1.5339317092293505,
+      "numerator_tokens": [
+        402,
+        402,
+        418,
+        402,
+        402
+      ],
+      "denominator_tokens": [
+        399,
+        399,
+        399,
+        399,
+        399
+      ],
+      "numerator_nfe": [
+        52,
+        52,
+        49,
+        52,
+        52
+      ],
+      "denominator_nfe": [
+        54,
+        54,
+        54,
+        54,
+        54
+      ]
+    },
+    {
+      "label": "joint_quantization",
+      "numerator": "fp8-fp8_e4m3-4gpu-graph",
+      "denominator": "bf16-bf16-4gpu-graph",
+      "status": "complete",
+      "speedup": 1.3590736996405788,
+      "numerator_tokens": [
+        412,
+        412,
+        412,
+        412,
+        412
+      ],
+      "denominator_tokens": [
+        399,
+        399,
+        399,
+        399,
+        399
+      ],
+      "numerator_nfe": [
+        47,
+        47,
+        47,
+        47,
+        47
+      ],
+      "denominator_nfe": [
+        54,
+        54,
+        54,
+        54,
+        54
+      ]
+    },
+    {
+      "label": "kv_quantization",
+      "numerator": "fp8-fp8_e4m3-2gpu-graph",
+      "denominator": "fp8-bf16-2gpu-graph",
+      "status": "complete",
+      "speedup": 0.7415051360114999,
+      "numerator_tokens": [
+        395,
+        395,
+        395,
+        395,
+        395
+      ],
+      "denominator_tokens": [
+        415,
+        415,
+        415,
+        415,
+        415
+      ],
+      "numerator_nfe": [
+        60,
+        60,
+        60,
+        60,
+        60
+      ],
+      "denominator_nfe": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ]
+    },
+    {
+      "label": "kv_quantization",
+      "numerator": "fp8-fp8_e4m3-4gpu-graph",
+      "denominator": "fp8-bf16-4gpu-graph",
+      "status": "complete",
+      "speedup": 0.8860066530102434,
+      "numerator_tokens": [
+        412,
+        412,
+        412,
+        412,
+        412
+      ],
+      "denominator_tokens": [
+        402,
+        402,
+        418,
+        402,
+        402
+      ],
+      "numerator_nfe": [
+        47,
+        47,
+        47,
+        47,
+        47
+      ],
+      "denominator_nfe": [
+        52,
+        52,
+        49,
+        52,
+        52
+      ]
+    },
+    {
+      "label": "scaling_2_to_4",
+      "numerator": "fp8-bf16-4gpu-graph",
+      "denominator": "fp8-bf16-2gpu-graph",
+      "status": "complete",
+      "speedup": 1.2430067742511455,
+      "numerator_tokens": [
+        402,
+        402,
+        418,
+        402,
+        402
+      ],
+      "denominator_tokens": [
+        415,
+        415,
+        415,
+        415,
+        415
+      ],
+      "numerator_nfe": [
+        52,
+        52,
+        49,
+        52,
+        52
+      ],
+      "denominator_nfe": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ],
+      "efficiency": 0.6215033871255727
+    },
+    {
+      "label": "scaling_2_to_4",
+      "numerator": "fp8-fp8_e4m3-4gpu-graph",
+      "denominator": "fp8-fp8_e4m3-2gpu-graph",
+      "status": "complete",
+      "speedup": 1.4852388988796383,
+      "numerator_tokens": [
+        412,
+        412,
+        412,
+        412,
+        412
+      ],
+      "denominator_tokens": [
+        395,
+        395,
+        395,
+        395,
+        395
+      ],
+      "numerator_nfe": [
+        47,
+        47,
+        47,
+        47,
+        47
+      ],
+      "denominator_nfe": [
+        60,
+        60,
+        60,
+        60,
+        60
+      ],
+      "efficiency": 0.7426194494398192
+    },
+    {
+      "label": "cuda_graph",
+      "numerator": "bf16-bf16-4gpu-graph",
+      "denominator": "bf16-bf16-4gpu-eager",
+      "status": "complete",
+      "speedup": 1.6338162159283174,
+      "numerator_tokens": [
+        399,
+        399,
+        399,
+        399,
+        399
+      ],
+      "denominator_tokens": [
+        400,
+        400,
+        400,
+        400,
+        400
+      ],
+      "numerator_nfe": [
+        54,
+        54,
+        54,
+        54,
+        54
+      ],
+      "denominator_nfe": [
+        51,
+        51,
+        51,
+        51,
+        51
+      ]
+    },
+    {
+      "label": "cuda_graph",
+      "numerator": "fp8-bf16-2gpu-graph",
+      "denominator": "fp8-bf16-2gpu-eager",
+      "status": "complete",
+      "speedup": 2.1778316620362683,
+      "numerator_tokens": [
+        415,
+        415,
+        415,
+        415,
+        415
+      ],
+      "denominator_tokens": [
+        425,
+        425,
+        425,
+        425,
+        425
+      ],
+      "numerator_nfe": [
+        52,
+        52,
+        52,
+        52,
+        52
+      ],
+      "denominator_nfe": [
+        48,
+        48,
+        48,
+        48,
+        48
+      ]
+    },
+    {
+      "label": "cuda_graph",
+      "numerator": "fp8-bf16-4gpu-graph",
+      "denominator": "fp8-bf16-4gpu-eager",
+      "status": "complete",
+      "speedup": 2.467016007869179,
+      "numerator_tokens": [
+        402,
+        402,
+        418,
+        402,
+        402
+      ],
+      "denominator_tokens": [
+        425,
+        425,
+        425,
+        425,
+        425
+      ],
+      "numerator_nfe": [
+        52,
+        52,
+        49,
+        52,
+        52
+      ],
+      "denominator_nfe": [
+        44,
+        44,
+        44,
+        44,
+        44
+      ]
+    },
+    {
+      "label": "cuda_graph",
+      "numerator": "fp8-fp8_e4m3-2gpu-graph",
+      "denominator": "fp8-fp8_e4m3-2gpu-eager",
+      "status": "complete",
+      "speedup": 2.15519895451571,
+      "numerator_tokens": [
+        395,
+        395,
+        395,
+        395,
+        395
+      ],
+      "denominator_tokens": [
+        395,
+        395,
+        395,
+        395,
+        395
+      ],
+      "numerator_nfe": [
+        60,
+        60,
+        60,
+        60,
+        60
+      ],
+      "denominator_nfe": [
+        48,
+        48,
+        48,
+        48,
+        48
+      ]
+    },
+    {
+      "label": "cuda_graph",
+      "numerator": "fp8-fp8_e4m3-4gpu-graph",
+      "denominator": "fp8-fp8_e4m3-4gpu-eager",
+      "status": "complete",
+      "speedup": 3.9810322726040543,
+      "numerator_tokens": [
+        412,
+        412,
+        412,
+        412,
+        412
+      ],
+      "denominator_tokens": [
+        361,
+        361,
+        361,
+        361,
+        361
+      ],
+      "numerator_nfe": [
+        47,
+        47,
+        47,
+        47,
+        47
+      ],
+      "denominator_nfe": [
+        55,
+        55,
+        55,
+        55,
+        55
+      ]
+    }
+  ],
+  "infeasible": [
+    {
+      "weights": "bf16",
+      "kv": "bf16",
+      "gpus": 1,
+      "status": "memory_infeasible",
+      "basis": "checkpoint_weight_capacity"
+    },
+    {
+      "weights": "bf16",
+      "kv": "bf16",
+      "gpus": 2,
+      "status": "memory_infeasible",
+      "basis": "checkpoint_weight_capacity"
+    },
+    {
+      "weights": "fp8",
+      "kv": "bf16",
+      "gpus": 1,
+      "status": "memory_infeasible",
+      "basis": "checkpoint_weight_capacity"
+    },
+    {
+      "weights": "fp8",
+      "kv": "fp8_e4m3",
+      "gpus": 1,
+      "status": "memory_infeasible",
+      "basis": "checkpoint_weight_capacity"
+    }
+  ],
+  "valid_measurements": 50,
+  "expected_measurements": 50,
+  "pair_validation": {
+    "bf16-bf16-4gpu": "output_mismatch",
+    "fp8-bf16-2gpu": "output_mismatch",
+    "fp8-bf16-4gpu": "output_mismatch",
+    "fp8-fp8_e4m3-2gpu": "output_mismatch",
+    "fp8-fp8_e4m3-4gpu": "output_mismatch"
+  },
+  "acceptance_policy": "Throughput priority, user-authorized output differences; runtime, timing and graph validity gates remain required.",
+  "interpretation": "Eager/Graph may change outputs, NFE, batching and attention kernels (BF16 eager native FA3 versus decomposed Graph FA2); ratios measure implementation throughput, not isolated launch overhead or quality equivalence."
+}

@@ -1,0 +1,94 @@
+{
+  "sources": {
+    "ultrachat": {
+      "repo": "HuggingFaceH4/ultrachat_200k",
+      "revision": "8049631c405ae6576f93f445c6b8166f76f5505a",
+      "split": "train_sft",
+      "file": "data/train_sft-00000-of-00003-a3ecf92756993583.parquet",
+      "path": "/workspace/FluxServe/runs/gsm8k-kv-calibration/data/ultrachat.parquet",
+      "sha256": "afa8fa7426081b2a0e732fb50dbb5cd402a28ad5f0dbe66c0d996d63e7220727",
+      "bytes": 243999189
+    },
+    "gsm8k-train": {
+      "repo": "openai/gsm8k",
+      "revision": "740312add88f781978c0658806c59bc2815b9866",
+      "split": "train",
+      "file": "main/train-00000-of-00001.parquet",
+      "path": "/workspace/FluxServe/runs/gsm8k-kv-calibration/data/gsm8k-train.parquet",
+      "sha256": "ea82612ea9582142387730c793eb67d3b12849002bc0b7fa6f8efafa7351419d",
+      "bytes": 2306545
+    },
+    "gsm8k-test": {
+      "repo": "openai/gsm8k",
+      "revision": "740312add88f781978c0658806c59bc2815b9866",
+      "split": "test",
+      "file": "main/test-00000-of-00001.parquet",
+      "path": "/workspace/FluxServe/runs/gsm8k-kv-calibration/data/gsm8k-test.parquet",
+      "sha256": "ee7b8da9e381df27b9e3f7758a159ab2bdaa4dbaa910546cbbc47e0cb44e4f59",
+      "bytes": 419088
+    }
+  },
+  "tokenizers_identical": true,
+  "calibration_samples": 512,
+  "calibration_selection": "first 512, then numpy default_rng(42) permutation; matches datasets.shuffle(seed=42)",
+  "calibration_max_input_tokens": 2048,
+  "calibration_generation_length": 2048,
+  "calibration_method": "FluxServe SDPA eager BF16 KV; observes prefill and all diffusion iterations",
+  "ultrachat_processing": "full conversation with model chat template, no generation prompt; right truncate at 2048 tokens",
+  "gsm8k_calibration_processing": "question only plus EvalScope zero-shot CoT instruction; model chat template; no gold answer input",
+  "evaluation": {
+    "samples": 1319,
+    "fewshot_train_indices": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "few_shot": 4,
+    "gen_len": 2048,
+    "template": "pinned EvalScope GSM8K FEWSHOT_TEMPLATE, plus model chat template",
+    "no_input_truncation": true,
+    "batch_size": 8,
+    "mini_batch_size": 4
+  },
+  "exact_test_question_overlap": {
+    "gsm8k_train": 0,
+    "ultrachat": 0
+  },
+  "input_stats": {
+    "ultrachat": {
+      "min": 286,
+      "max": 2048,
+      "mean": 1145.556640625,
+      "truncated": 32
+    },
+    "gsm8k-train": {
+      "min": 60,
+      "max": 207,
+      "mean": 95.658203125,
+      "truncated": 0
+    },
+    "test": {
+      "min": 667,
+      "max": 832,
+      "mean": 704.9241849886278,
+      "truncated": 0
+    }
+  },
+  "files": {
+    "data/test.jsonl": "aa937689b56d5481731981d94e7a3894dbffb54599df7e285ed5feadba857eda",
+    "data/gold.jsonl": "f98f9902010cf84ce5046b8507e3f18ecbacce4e11492a03a9b05017a82dc4af",
+    "data/smoke.jsonl": "ac644e0085b047f1a881c096ccf53d1b3aa9484d5b2e96065546817753cd6e85",
+    "data/calibration-ultrachat.jsonl": "2103666fa4ac5f6c4a20e7e2864fc2d6d5fdacec5eea610203520b17d5d679f1",
+    "data/calibration-gsm8k-train.jsonl": "ef39e91f8286c0d7755dad1586853f4be4790497a2673657090db88756c97708",
+    "data/fewshot.json": "2ce9d447c03109695f92b2499291056f0e25dee2b7e71f39ac47fe755fa0cb43"
+  },
+  "evalscope_commit": "acd09b44384d53174768bb1063f675420f76fae9",
+  "versions": {
+    "evalscope": "0.0.0.dev0",
+    "datasets": "4.8.4",
+    "pyarrow": "25.0.1",
+    "transformers": "5.17.0",
+    "numpy": "2.5.3"
+  }
+}

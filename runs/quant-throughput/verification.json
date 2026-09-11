@@ -1,0 +1,12 @@
+{
+  "status": "passed",
+  "valid_measurements": 50,
+  "runtime_cases": 10,
+  "ratio_checks": 17,
+  "output_comparisons": 85,
+  "measurement_intervals_nonoverlapping": true,
+  "source_and_environment_unchanged": true,
+  "output_equality_required": false,
+  "graph_scope": "decode; prefill remains eager on this batch-8/mini-batch-4 workload",
+  "token_count_policy": "Prompt excluded; first EOS included; otherwise count non-mask completion tokens."
+}

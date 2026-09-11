@@ -1,0 +1,134 @@
+[
+  {
+    "case": "bf16-bf16-4gpu-eager",
+    "runtime_status": "passed",
+    "tps": 179.2239208288746,
+    "tokens": 390,
+    "nfe": 51,
+    "replays": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "max_memory_gib": 56.9921875
+  },
+  {
+    "case": "bf16-bf16-4gpu-graph",
+    "runtime_status": "passed",
+    "tps": 304.69526627993787,
+    "tokens": 399,
+    "nfe": 54,
+    "replays": [
+      52,
+      52,
+      52,
+      52
+    ],
+    "max_memory_gib": 56.453125
+  },
+  {
+    "case": "fp8-bf16-2gpu-eager",
+    "runtime_status": "passed",
+    "tps": 163.94575621999132,
+    "tokens": 425,
+    "nfe": 48,
+    "replays": [
+      0,
+      0
+    ],
+    "max_memory_gib": 55.32421875
+  },
+  {
+    "case": "fp8-bf16-2gpu-graph",
+    "runtime_status": "passed",
+    "tps": 366.3862625660617,
+    "tokens": 415,
+    "nfe": 52,
+    "replays": [
+      50,
+      50
+    ],
+    "max_memory_gib": 54.810546875
+  },
+  {
+    "case": "fp8-bf16-4gpu-eager",
+    "runtime_status": "passed",
+    "tps": 184.96830103498016,
+    "tokens": 425,
+    "nfe": 44,
+    "replays": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "max_memory_gib": 31.37109375
+  },
+  {
+    "case": "fp8-bf16-4gpu-graph",
+    "runtime_status": "passed",
+    "tps": 454.2835264864285,
+    "tokens": 402,
+    "nfe": 52,
+    "replays": [
+      50,
+      50,
+      50,
+      50
+    ],
+    "max_memory_gib": 30.826171875
+  },
+  {
+    "case": "fp8-fp8_e4m3-2gpu-eager",
+    "runtime_status": "passed",
+    "tps": 70.06408235707511,
+    "tokens": 395,
+    "nfe": 48,
+    "replays": [
+      0,
+      0
+    ],
+    "max_memory_gib": 55.296875
+  },
+  {
+    "case": "fp8-fp8_e4m3-2gpu-graph",
+    "runtime_status": "passed",
+    "tps": 329.951884508893,
+    "tokens": 409,
+    "nfe": 46,
+    "replays": [
+      44,
+      44
+    ],
+    "max_memory_gib": 54.81640625
+  },
+  {
+    "case": "fp8-fp8_e4m3-4gpu-eager",
+    "runtime_status": "passed",
+    "tps": 58.83239856268566,
+    "tokens": 361,
+    "nfe": 55,
+    "replays": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "max_memory_gib": 31.35546875
+  },
+  {
+    "case": "fp8-fp8_e4m3-4gpu-graph",
+    "runtime_status": "passed",
+    "tps": 401.7524366923539,
+    "tokens": 412,
+    "nfe": 47,
+    "replays": [
+      45,
+      45,
+      45,
+      45
+    ],
+    "max_memory_gib": 30.828125
+  }
+]

@@ -1,0 +1,12 @@
+{
+  "fp8": {
+    "repo": "thnkinbtfly/llada2.0-flash-fp8",
+    "revision": "85bd9f38034aa46f93135676189acec4d7fc40d3",
+    "path": "/workspace/.hf_home/hub/models--thnkinbtfly--llada2.0-flash-fp8/snapshots/85bd9f38034aa46f93135676189acec4d7fc40d3"
+  },
+  "bf16": {
+    "repo": "inclusionAI/LLaDA2.0-flash",
+    "revision": "744c3f8c6c8317d2377d6d16d8a3d4be2caef563",
+    "path": "/workspace/.hf_home/hub/models--inclusionAI--LLaDA2.0-flash/snapshots/744c3f8c6c8317d2377d6d16d8a3d4be2caef563"
+  }
+}

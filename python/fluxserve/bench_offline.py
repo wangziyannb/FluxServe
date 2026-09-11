@@ -667,14 +667,15 @@ def run_worker(args, *, init_method: str = "env://"):
         if flashinfer_graph is not None:
             flashinfer_graph.reset_serving_counts()
         capture_counts_before = _flashinfer_capture_counts(runner)
-        start = time.time()
+        start = time.perf_counter()
         peak_kv_data_bytes = 0
+        local_generation_seconds = 0.0
         for i in iterator:
             input_ids = sorted_input_ids[i : i + args.batch_size]
             generation_lengths = sorted_padded_gen_lens[i : i + len(input_ids)]
             runner.runner_config.gen_length = max(generation_lengths)
             batch_input_ids = pad_batch(input_ids, device, runner.decoder.mask_id)
-            inner_start = time.time()
+            inner_start = _start_generation_timing(device)
             prev_forwards = runner.num_forwards
             if is_diffusion_gemma:
                 out = runner.generate(
@@ -690,6 +691,8 @@ def run_worker(args, *, init_method: str = "env://"):
                 )
             else:
                 out = runner.generate(batch_input_ids)
+            local_time, sample_time = _finish_generation_timing(inner_start, device)
+            local_generation_seconds += local_time
             kv_cache = getattr(runner, "past_key_values", None)
             kv_data = kv_cache if isinstance(kv_cache, torch.Tensor) else getattr(kv_cache, "data", None)
             if isinstance(kv_data, torch.Tensor):
@@ -704,7 +707,6 @@ def run_worker(args, *, init_method: str = "env://"):
                     f"[Iter={i:4d}] denoising_steps={tuple(denoising_steps)}"
                 )
             nfe = runner.num_forwards - prev_forwards
-            sample_time = time.time() - inner_start
 
             for j in range(batch_input_ids.shape[0]):
                 batch_info.outputs.append(out[j].unsqueeze(0))
@@ -729,11 +731,12 @@ def run_worker(args, *, init_method: str = "env://"):
                     f"TPF={metrics.tpf:2.2f}({np.mean(batch_info.tpfs):4.2f}), "
                     f"TPS={metrics.tps:4.2f}({np.mean(batch_info.tpss):4.2f})"
                 )
-        stop = time.time()
+        stop = time.perf_counter()
 
         _write_memory_and_graph_metrics(
             args, runner, batch_info, peak_kv_data_bytes, rank, world_size,
             capture_counts_before=capture_counts_before,
+            local_generation_seconds=local_generation_seconds,
         )
 
         if observer is not None:
@@ -781,6 +784,26 @@ def run_worker(args, *, init_method: str = "env://"):
             destroy_distributed()
 
 
+def _start_generation_timing(device):
+    """Exclude queued setup work and align workers before generation."""
+    if torch.distributed.is_initialized():
+        torch.distributed.barrier()
+    torch.cuda.synchronize(device)
+    return time.perf_counter()
+
+
+def _finish_generation_timing(start, device):
+    """Include GPU completion, then reduce elapsed time outside the interval."""
+    torch.cuda.synchronize(device)
+    local_elapsed = time.perf_counter() - start
+    elapsed = local_elapsed
+    if torch.distributed.is_initialized():
+        value = torch.tensor(local_elapsed, dtype=torch.float64, device=device)
+        torch.distributed.all_reduce(value, op=torch.distributed.ReduceOp.MAX)
+        elapsed = value.item()
+    return local_elapsed, elapsed
+
+
 def resolve_log_file(args) -> str:
     if args.log_file is None:
         return os.path.join(args.output_dir, f"{args.exp_name}.log")
@@ -801,14 +824,25 @@ def _flashinfer_capture_counts(runner):
 
 def _write_memory_and_graph_metrics(
     args, runner, batch_info, kv_bytes, rank, world_size, *, capture_counts_before,
+    local_generation_seconds=None,
 ):
     """Allocator peaks include model loading, warmup, capture and generation."""
     graph = getattr(runner, "graph_runner", None)
     graph_cache = getattr(graph, "past_key_values", None)
     flashinfer_graph = getattr(runner, "flashinfer_graph_runner", None)
     capture_counts_after = _flashinfer_capture_counts(runner)
+    parameter_bytes_by_dtype = {}
+    if hasattr(runner.model, "parameters"):
+        for parameter in runner.model.parameters():
+            dtype = str(parameter.dtype)
+            parameter_bytes_by_dtype[dtype] = (
+                parameter_bytes_by_dtype.get(dtype, 0)
+                + parameter.numel() * parameter.element_size()
+            )
     local = {
         "rank": rank,
+        "local_generation_seconds": local_generation_seconds,
+        "parameter_bytes_by_dtype": parameter_bytes_by_dtype,
         "kv_data_bytes": kv_bytes,
         "graph_input_kv_bytes": graph_cache.nbytes if isinstance(graph_cache, torch.Tensor) else 0,
         "peak_allocated_bytes": torch.cuda.max_memory_allocated(),
@@ -828,8 +862,12 @@ def _write_memory_and_graph_metrics(
         ranks = [local]
     if rank == 0:
         quant = getattr(runner, "kv_quantization", None)
+        quant_config = getattr(getattr(runner, "model_config", None), "quant_config", None)
         payload = {
             "version": 1, "kv_cache_dtype": getattr(quant, "dtype", "bf16"),
+            "timing": "synchronized_perf_counter_max_rank_per_batch",
+            "weight_format": quant_config.get_name() if quant_config is not None else "bf16",
+            "num_hidden_layers": getattr(getattr(runner, "model_config", None), "num_hidden_layers", None),
             "kv_scale_source": getattr(quant, "source", "none"),
             "attention_backend": args.attention_backend,
             "nfe": batch_info.total_forward,

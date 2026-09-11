@@ -1,0 +1,7 @@
+{
+  "bf16-bf16-4gpu": "output_mismatch",
+  "fp8-bf16-2gpu": "output_mismatch",
+  "fp8-bf16-4gpu": "output_mismatch",
+  "fp8-fp8_e4m3-2gpu": "output_mismatch",
+  "fp8-fp8_e4m3-4gpu": "output_mismatch"
+}

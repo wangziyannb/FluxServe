@@ -1,0 +1,13 @@
+{
+  "status": "passed",
+  "runtime_tokenizer_roundtrip": {
+    "test": 1319,
+    "calibration-ultrachat": 512,
+    "calibration-gsm8k-train": 512
+  },
+  "runtime_versions": {
+    "torch": "2.8.0+cu128",
+    "transformers": "5.15.1",
+    "flashinfer-python": "0.6.18"
+  }
+}
